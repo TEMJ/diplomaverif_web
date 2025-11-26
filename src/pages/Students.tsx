@@ -21,6 +21,8 @@ export const Students: React.FC = () => {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [formData, setFormData] = useState({
     universityId: '',
+    firstName: '',
+    lastName: '',
     matricule: '',
     email: '',
     photoUrl: '',
@@ -38,44 +40,44 @@ export const Students: React.FC = () => {
     setUniversities([]);
 
     try {
-      // Vérifier si l'utilisateur est connecté et a un rôle
+      // Check if user is authenticated and has a role
       if (!user?.role) {
-        throw new Error('Utilisateur non authentifié ou rôle manquant');
+        throw new Error('User not authenticated or role missing');
       }
 
-      // Préparer les paramètres selon le rôle
+      // Prepare parameters based on user role
       const params: Record<string, any> = {};
       if (user.role === Role.UNIVERSITY) {
         if (!user.universityId) {
-          throw new Error('ID université manquant pour le rôle UNIVERSITY');
+          throw new Error('University ID missing for UNIVERSITY role');
         }
         params.universityId = user.universityId;
       }
 
-      // Récupérer les étudiants
+      // Fetch students with proper error handling
       const studentsRes = await axios.get('/students', { params });
       
       if (!studentsRes.data) {
-        throw new Error('Réponse vide du serveur');
+        throw new Error('Empty response from server');
       }
 
-      // S'assurer que nous avons un tableau d'étudiants
+      // Ensure we have an array of students
       const studentsList = studentsRes.data.data || studentsRes.data;
       if (!Array.isArray(studentsList)) {
-        console.error('Format de réponse inattendu:', studentsList);
-        throw new Error('Format de données invalide');
+        console.error('Unexpected response format:', studentsList);
+        throw new Error('Invalid data format');
       }
 
       setStudents(studentsList);
 
-      // Récupérer les universités si admin
+      // Fetch universities if admin
       if (user.role === Role.ADMIN) {
         const universitiesRes = await axios.get('/universities');
         const universitiesList = universitiesRes.data.data || universitiesRes.data;
         
         if (!Array.isArray(universitiesList)) {
-          console.error('Format de réponse universités inattendu:', universitiesList);
-          throw new Error('Format de données des universités invalide');
+          console.error('Unexpected universities response format:', universitiesList);
+          throw new Error('Invalid universities data format');
         }
 
         setUniversities(universitiesList);
@@ -83,9 +85,9 @@ export const Students: React.FC = () => {
     } catch (error: any) {
       const errorMessage = error.response?.data?.message 
         || error.message 
-        || 'Erreur lors de la récupération des données';
+        || 'Error retrieving data';
       
-      console.error('Erreur fetchData:', {
+      console.error('Fetch data error:', {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status
@@ -102,6 +104,8 @@ export const Students: React.FC = () => {
       setEditingStudent(student);
       setFormData({
         universityId: student.universityId,
+        firstName: student.firstName,
+        lastName: student.lastName,
         matricule: student.matricule,
         email: student.email,
         photoUrl: student.photoUrl || '',
@@ -112,6 +116,8 @@ export const Students: React.FC = () => {
       setEditingStudent(null);
       setFormData({
         universityId: user?.role === Role.UNIVERSITY ? user.universityId || '' : '',
+        firstName: '',
+        lastName: '',
         matricule: '',
         email: '',
         photoUrl: '',
@@ -155,9 +161,13 @@ export const Students: React.FC = () => {
   };
 
   const columns = [
+    {
+      header: 'Full Name',
+      accessor: ((row: Student) => `${row.firstName} ${row.lastName}`) as (row: Student) => React.ReactNode,
+    },
     { header: 'Matricule', accessor: 'matricule' as keyof Student },
     { header: 'Email', accessor: 'email' as keyof Student },
-    { header: 'Major', accessor: 'major' as keyof Student },
+    { header: 'Specialization', accessor: 'major' as keyof Student },
     {
       header: 'Date of Birth',
       accessor: ((row: Student) => new Date(row.dateOfBirth).toLocaleDateString()) as (row: Student) => React.ReactNode,
@@ -214,6 +224,18 @@ export const Students: React.FC = () => {
               required
             />
           )}
+          <Input
+            label="First Name"
+            value={formData.firstName}
+            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+            required
+          />
+          <Input
+            label="Last Name"
+            value={formData.lastName}
+            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+            required
+          />
           <Input
             label="Matricule"
             value={formData.matricule}

@@ -63,7 +63,7 @@ export const Dashboard: React.FC = () => {
         newStats[result.key as keyof Stats] = count;
       });
 
-      console.log('Fetched stats:', newStats); // Pour déboguer
+      console.log('Fetched stats:', newStats); // For debugging
       setStats(newStats);
 
     } catch (error) {

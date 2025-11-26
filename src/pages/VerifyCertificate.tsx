@@ -11,7 +11,7 @@ import { CheckCircle, XCircle, Award } from 'lucide-react';
 export const VerifyCertificate: React.FC = () => {
   const [qrHash, setQrHash] = useState('');
   const [loading, setLoading] = useState(false);
-  // Le backend retourne { data: { certificate: {...} } }
+  // The backend returns { data: { certificate: {...} } }
   const [certificate, setCertificate] = useState<Certificate | null>(null);
   const [verification, setVerification] = useState<Verification | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -188,6 +188,7 @@ export const VerifyCertificate: React.FC = () => {
                                 <img src={certificate.student.photoUrl} alt="student" className="w-16 h-16 rounded-md object-cover" />
                               )}
                               <div>
+                                <div className="text-sm font-semibold text-gray-900">{certificate.student.firstName} {certificate.student.lastName}</div>
                                 <div className="text-sm text-gray-700">{certificate.student.email}</div>
                                 <div className="text-xs text-gray-500">Matricule: {certificate.student.matricule}</div>
                               </div>

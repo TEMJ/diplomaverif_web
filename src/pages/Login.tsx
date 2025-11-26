@@ -21,11 +21,11 @@ export const Login: React.FC = () => {
       const userData = await login(email, password);
       toast.success('Login successful!');
       
-      // Utiliser les données utilisateur retournées par login()
+      // Use user data returned by login()
       if (userData && userData.role) {
         navigate('/dashboard');
       } else {
-        toast.error('Erreur: rôle utilisateur non défini');
+        toast.error('Error: user role not defined');
       }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };

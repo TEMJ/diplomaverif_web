@@ -3,7 +3,7 @@ import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
-// Pour le débogage - à enlever en production
+// For debugging - remove in production
 console.log('API URL:', API_URL);
 
 const axiosInstance = axios.create({
@@ -11,7 +11,7 @@ const axiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  // Augmenter le timeout si nécessaire
+  // Increase timeout if needed
   timeout: 10000,
 });
 
@@ -21,7 +21,7 @@ axiosInstance.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    // Log pour déboguer
+    // Log for debugging
     console.log(`${config.method?.toUpperCase()} ${config.url}`, config.params || {});
     return config;
   },
@@ -33,7 +33,7 @@ axiosInstance.interceptors.request.use(
 
 axiosInstance.interceptors.response.use(
   (response) => {
-    // Log pour déboguer
+    // Log for debugging
     if (!response.data) {
       console.warn('Empty response data:', response.config.url);
     }
@@ -41,9 +41,9 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     if (!error.response) {
-      // Erreur réseau (pas de réponse du serveur)
+      // Network error (no response from server)
       console.error('Network Error:', error.message);
-      toast.error('Erreur de connexion au serveur. Vérifiez votre connexion.');
+      toast.error('Server connection error. Please check your connection.');
       return Promise.reject(error);
     }
 
@@ -60,18 +60,18 @@ axiosInstance.interceptors.response.use(
         window.location.href = '/login';
         break;
       case 403:
-        toast.error("Vous n'avez pas les permissions nécessaires");
+        toast.error('You do not have the necessary permissions');
         break;
       case 404:
-        toast.error('Ressource non trouvée');
+        toast.error('Resource not found');
         break;
       case 500:
-        toast.error('Erreur serveur. Veuillez réessayer plus tard.');
+        toast.error('Server error. Please try again later.');
         break;
       default:
         const message = error.response?.data?.message 
           || error.response?.data?.error 
-          || 'Une erreur est survenue';
+          || 'An error occurred';
         toast.error(message);
     }
 
@@ -79,7 +79,7 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-// Test de connexion à l'API au démarrage
+// API health check on startup
 axiosInstance.get('/health-check').catch(error => {
   console.warn('API health check failed:', error.message);
 });

@@ -32,6 +32,8 @@ export interface University {
 export interface Student {
   id: string;
   universityId: string;
+  firstName: string;
+  lastName: string;
   matricule: string;
   email: string;
   photoUrl?: string;

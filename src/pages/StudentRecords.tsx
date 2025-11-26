@@ -108,7 +108,7 @@ export const StudentRecords: React.FC = () => {
   const columns = [
     {
       header: 'Student',
-      accessor: ((row: StudentRecord) => row.student?.matricule || 'N/A') as (row: StudentRecord) => React.ReactNode,
+      accessor: ((row: StudentRecord) => row.student ? `${row.student.firstName} ${row.student.lastName}` : 'N/A') as (row: StudentRecord) => React.ReactNode,
     },
     {
       header: 'Attendance',
@@ -170,7 +170,7 @@ export const StudentRecords: React.FC = () => {
             label="Student"
             value={formData.studentId}
             onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-            options={students.map((s) => ({ value: s.id, label: `${s.matricule} - ${s.email}` }))}
+            options={students.map((s) => ({ value: s.id, label: `${s.firstName} ${s.lastName} (${s.matricule})` }))}
             required
             disabled={!!editingRecord}
           />

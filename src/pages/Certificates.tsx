@@ -25,6 +25,7 @@ export const Certificates: React.FC = () => {
     degreeTitle: '',
     specialization: '',
     graduationDate: '',
+    pdfUrl: '',
   });
 
   useEffect(() => {
@@ -58,41 +59,80 @@ export const Certificates: React.FC = () => {
   };
 
   const handleOpenModal = () => {
+    // Si un seul étudiant disponible, le pré-sélectionner
+    // Sinon, laisser vide mais avertir l'utilisateur
+    const defaultStudentId = students.length === 1 ? students[0].id : '';
+    
     setFormData({
-      studentId: '',
+      studentId: defaultStudentId,
       degreeTitle: '',
       specialization: '',
       graduationDate: '',
+      pdfUrl: '',
     });
+    
+    // Si plusieurs étudiants et aucun n'est présélectionné, avertir l'utilisateur
+    if (students.length > 1) {
+      toast.error('Please select a student from the dropdown list.');
+    }
+    
     setIsModalOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Vérifier d'abord si des étudiants sont disponibles
+    if (students.length === 0) {
+      toast.error('No students available. Please add students first.');
+      return;
+    }
+
+    // Debug: log the current formData at submit time
+    console.log('formData at submit:', formData);
+
     try {
       // Client-side validation
-      if (!formData.studentId || !formData.degreeTitle || !formData.specialization || !formData.graduationDate) {
-        toast.error('All fields are required');
+      const requiredFields = ['studentId', 'degreeTitle', 'specialization', 'graduationDate'];
+      const missing = requiredFields.filter((key) => {
+        const val = (formData as any)[key];
+        return !(val !== undefined && val !== null && String(val).trim().length > 0);
+      });
+
+      // Vérification spécifique pour studentId
+      if (!formData.studentId || formData.studentId === '') {
+        toast.error('Please select a student from the dropdown list.');
+        return;
+      }
+
+      if (missing.length > 0) {
+        console.warn('Certificate form missing fields:', missing, 'formData:', formData);
+        toast.error(`All fields are required. Missing: ${missing.join(', ')}`);
         return;
       }
       // Derive universityId either from current user (if UNIVERSITY) or from selected student
       const selectedStudent = students.find((s) => s.id === formData.studentId);
       const universityId = user?.universityId || selectedStudent?.universityId;
 
+      console.log('Selected student:', selectedStudent);
+      console.log('User universityId:', user?.universityId);
+      console.log('Final universityId:', universityId);
+
       if (!universityId) {
         toast.error('Unable to determine university for this certificate. Please ensure the student belongs to a university.');
         return;
       }
 
-      // Ensure graduationDate is sent in ISO format
+      // Prepare payload. Use null for optional fields instead of empty strings
       const payload = {
-        ...formData,
-        graduationDate: formData.graduationDate ? new Date(formData.graduationDate).toISOString() : undefined,
+        studentId: String(formData.studentId),
+        degreeTitle: String(formData.degreeTitle).trim(),
+        specialization: String(formData.specialization).trim(),
+        graduationDate: formData.graduationDate,
         universityId,
+        pdfUrl: 'https://example.com/placeholder.pdf', // URL temporaire obligatoire
       };
 
-      // Debug logs to help trace validation issues from backend
       console.log('Issuing certificate - payload:', payload);
       const res = await axios.post('/certificates', payload);
       console.log('Certificate creation response:', res);
@@ -103,16 +143,26 @@ export const Certificates: React.FC = () => {
       const err = error as { response?: { data?: any; status?: number } };
       console.error('Certificate creation error:', err.response?.data ?? err);
 
+      console.error('Full error response:', err.response);
+      console.error('Error status:', err.response?.status);
+      console.error('Error data type:', typeof err.response?.data);
+      
+      // Afficher le contenu complet de l'erreur
+      if (err.response?.data) {
+        console.error('Error data content:', JSON.stringify(err.response.data, null, 2));
+      }
+
       // If backend provides validation details, show the full payload; otherwise show message
       const serverMessage = err.response?.data?.message || err.response?.data || (err as any).message;
       // Prefer a human-friendly message but include details for debugging
-      if (typeof serverMessage === 'string') {
+      if (typeof serverMessage === 'object') {
+        const errorText = JSON.stringify(serverMessage, null, 2);
+        console.error('Parsed error object:', errorText);
+        toast.error(`Server error: ${errorText}`);
+      } else if (typeof serverMessage === 'string') {
         toast.error(serverMessage);
-      } else if (serverMessage) {
-        // stringify non-string server payload (validation errors)
-        toast.error(JSON.stringify(serverMessage));
       } else {
-        toast.error('Operation failed - check console for details');
+        toast.error('An unknown error occurred');
       }
     }
   };
@@ -134,8 +184,50 @@ export const Certificates: React.FC = () => {
     setViewingCertificate(certificate);
   };
 
+  // Helper to robustly extract student name fields from API objects that may use different keys
+  const formatStudentDisplay = (s: any) => {
+    if (!s) return '—';
+    const first = s.firstName ?? s.firstname ?? s.first_name ?? '';
+    const last = s.lastName ?? s.lastname ?? s.last_name ?? '';
+    const matricule = s.matricule ?? s.matriculeNumber ?? s.registration ?? '';
+    const full = `${(first || '').trim()} ${(last || '').trim()}`.trim();
+
+    // If we have a full name, prefer showing "Name (Matricule)" when matricule exists
+    if (full) return matricule ? `${full} (${matricule})` : full;
+
+    // If no separate first/last but there is a combined name field, use it
+    const alt = s.name ?? s.fullName ?? s.title ?? '';
+    if (alt) return matricule ? `${alt} (${matricule})` : alt;
+
+    // If no name available, but we have a matricule, show matricule (useful identifier)
+    if (matricule) return matricule;
+
+    // Fallback to id if nothing else
+    if (s.id) return s.id;
+
+    return '—';
+  };
+
   const columns = [
     { header: 'Degree Title', accessor: 'degreeTitle' as keyof Certificate },
+    {
+      header: 'Student',
+      accessor: ((row: Certificate) => {
+        const s = row.student || students.find((st) => st.id === row.studentId);
+        if (!s) return '—';
+        
+        // Afficher seulement le nom complet
+        const first = s.firstName;
+        const last = s.lastName;
+        const full = `${(first || '').trim()} ${(last || '').trim()}`.trim();
+        
+        if (full) return full;
+        
+        // Fallback au matricule si aucun nom n'est disponible
+        const matricule = s.matricule;
+        return matricule || s.id || '—';
+      }) as (row: Certificate) => React.ReactNode,
+    },
     { header: 'Specialization', accessor: 'specialization' as keyof Certificate },
     {
       header: 'Graduation Date',
@@ -212,7 +304,7 @@ export const Certificates: React.FC = () => {
             label="Student"
             value={formData.studentId}
             onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-            options={students.map((s) => ({ value: s.id, label: `${s.matricule} - ${s.email}` }))}
+            options={students.map((s) => ({ value: s.id, label: formatStudentDisplay(s) }))}
             required
           />
           <Input
@@ -254,6 +346,12 @@ export const Certificates: React.FC = () => {
             <div>
               <label className="text-sm font-medium text-gray-600">Degree Title</label>
               <p className="text-gray-900">{viewingCertificate.degreeTitle}</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-600">Student</label>
+              <p className="text-gray-900">
+                {formatStudentDisplay(viewingCertificate.student || students.find((st) => st.id === viewingCertificate.studentId))}
+              </p>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-600">Specialization</label>

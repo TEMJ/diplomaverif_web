@@ -8,6 +8,7 @@ Keep edits focused and low-risk. Prefer small, isolated changes (component, hook
 - Routing: `react-router-dom` is used (see `src/App.tsx`); pages live under `src/pages/` and are wrapped with `ProtectedRoute` and `Layout` for authenticated routes.
 - API layer: `src/lib/axios.ts` creates an axios instance. Base URL is taken from `import.meta.env.VITE_API_URL` (fallback `http://localhost:3000/api`).
 - Auth: `src/context/AuthContext.tsx` stores the JWT in `localStorage` under the key `token`. The axios request interceptor injects `Authorization: Bearer <token>`; response interceptor clears token and redirects to `/login` on 401.
+- Student model: Includes `firstName`, `lastName`, `matricule`, `email`, `photoUrl`, `dateOfBirth`, `major`, `universityId`. Always display full name as `${firstName} ${lastName}` in tables and selects for consistency.
 
 ## Dev / build / checks (explicit)
 - Start dev server: `npm run dev` (runs `vite`).
