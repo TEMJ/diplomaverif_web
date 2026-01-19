@@ -10,9 +10,14 @@ import { Dashboard } from './pages/Dashboard';
 import { Universities } from './pages/Universities';
 import { Students } from './pages/Students';
 import { Certificates } from './pages/Certificates';
+import { CertificateIssuance } from './pages/CertificateIssuance';
 import { Verifications } from './pages/Verifications';
-import { StudentRecords } from './pages/StudentRecords';
+// import { StudentRecords } from './pages/StudentRecords';
 import { VerifyCertificate } from './pages/VerifyCertificate';
+import { Subjects } from './pages/Subjects';
+import { Grades } from './pages/Grades';
+import { Programs } from './pages/Programs';
+import { Modules } from './pages/Modules';
 
 function App() {
   return (
@@ -59,11 +64,44 @@ function App() {
           />
 
           <Route
+            path="/programs"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Programs />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/modules"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Modules />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/certificates"
             element={
               <ProtectedRoute>
                 <Layout>
                   <Certificates />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/certificate-issuance"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <CertificateIssuance />
                 </Layout>
               </ProtectedRoute>
             }
@@ -80,12 +118,25 @@ function App() {
             }
           />
 
+
+
           <Route
-            path="/student-records"
+            path="/subjects"
             element={
               <ProtectedRoute>
                 <Layout>
-                  <StudentRecords />
+                  <Subjects />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/grades"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Grades />
                 </Layout>
               </ProtectedRoute>
             }

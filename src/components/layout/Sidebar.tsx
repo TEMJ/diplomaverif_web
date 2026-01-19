@@ -8,6 +8,9 @@ import {
   Award,
   CheckCircle,
   FileText,
+  BookOpen,
+  Grid3x3,
+  Send,
 } from 'lucide-react';
 import { Role } from '../../types';
 
@@ -34,10 +37,28 @@ export const Sidebar: React.FC = () => {
       roles: [Role.ADMIN, Role.UNIVERSITY],
     },
     {
+      path: '/programs',
+      label: 'Programs',
+      icon: BookOpen,
+      roles: [Role.ADMIN, Role.UNIVERSITY],
+    },
+    {
+      path: '/modules',
+      label: 'Modules',
+      icon: Grid3x3,
+      roles: [Role.ADMIN, Role.UNIVERSITY],
+    },
+    {
       path: '/certificates',
       label: 'Certificates',
       icon: Award,
       roles: [Role.ADMIN, Role.UNIVERSITY, Role.STUDENT],
+    },
+    {
+      path: '/certificate-issuance',
+      label: 'Issue Certificates',
+      icon: Send,
+      roles: [Role.ADMIN, Role.UNIVERSITY],
     },
     {
       path: '/verifications',
@@ -45,12 +66,7 @@ export const Sidebar: React.FC = () => {
       icon: CheckCircle,
       roles: [Role.ADMIN, Role.UNIVERSITY],
     },
-    {
-      path: '/student-records',
-      label: 'Student Records',
-      icon: FileText,
-      roles: [Role.ADMIN, Role.UNIVERSITY, Role.STUDENT],
-    },
+
   ];
 
   const filteredNavItems = navItems.filter((item) =>

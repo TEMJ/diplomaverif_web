@@ -7,18 +7,19 @@ import { Input } from '../components/common/Input';
 import { Select } from '../components/common/Select';
 import axios from '../lib/axios';
 import toast from 'react-hot-toast';
-import { StudentRecord, Student } from '../types';
+// import { StudentRecord, Student } from '../types';
+import { Student } from '../types';
 import { Plus, Edit, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Role } from '../types';
 
 export const StudentRecords: React.FC = () => {
   const { user } = useAuth();
-  const [records, setRecords] = useState<StudentRecord[]>([]);
+  const [records, setRecords] = useState<any[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingRecord, setEditingRecord] = useState<StudentRecord | null>(null);
+  const [editingRecord, setEditingRecord] = useState<any | null>(null);
   const [formData, setFormData] = useState({
     studentId: '',
     attendance: '',
@@ -56,7 +57,7 @@ export const StudentRecords: React.FC = () => {
     }
   };
 
-  const handleOpenModal = (record?: StudentRecord) => {
+  const handleOpenModal = (record?: any) => {
     if (record) {
       setEditingRecord(record);
       setFormData({
@@ -108,19 +109,19 @@ export const StudentRecords: React.FC = () => {
   const columns = [
     {
       header: 'Student',
-      accessor: ((row: StudentRecord) => row.student ? `${row.student.firstName} ${row.student.lastName}` : 'N/A') as (row: StudentRecord) => React.ReactNode,
+      accessor: ((row: any) => row.student ? `${row.student.firstName} ${row.student.lastName}` : 'N/A') as (row: any) => React.ReactNode,
     },
     {
       header: 'Attendance',
-      accessor: ((row: StudentRecord) => `${row.attendance}%`) as (row: StudentRecord) => React.ReactNode,
+      accessor: ((row: any) => `${row.attendance}%`) as (row: any) => React.ReactNode,
     },
     {
       header: 'Discipline',
-      accessor: ((row: StudentRecord) => row.discipline.substring(0, 50) + '...') as (row: StudentRecord) => React.ReactNode,
+      accessor: ((row: any) => row.discipline.substring(0, 50) + '...') as (row: any) => React.ReactNode,
     },
     {
       header: 'Actions',
-      accessor: ((row: StudentRecord) => (
+      accessor: ((row: any) => (
         <div className="flex space-x-2">
           {user?.role !== Role.STUDENT && (
             <button
@@ -140,7 +141,7 @@ export const StudentRecords: React.FC = () => {
             <Download className="w-5 h-5" />
           </a>
         </div>
-      )) as (row: StudentRecord) => React.ReactNode,
+      )) as (row: any) => React.ReactNode,
     },
   ];
 

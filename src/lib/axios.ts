@@ -21,8 +21,15 @@ axiosInstance.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    // Log for debugging
-    console.log(`${config.method?.toUpperCase()} ${config.url}`, config.params || {});
+    
+    // If data is FormData, remove Content-Type so browser sets it correctly with boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+      console.log(`FormData Request: ${config.method?.toUpperCase()} ${config.url}`);
+    } else {
+      // Log for debugging
+      console.log(`${config.method?.toUpperCase()} ${config.url}`, config.params || {});
+    }
     return config;
   },
   (error) => {
@@ -78,10 +85,5 @@ axiosInstance.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-// API health check on startup
-axiosInstance.get('/health-check').catch(error => {
-  console.warn('API health check failed:', error.message);
-});
 
 export default axiosInstance;

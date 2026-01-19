@@ -3,19 +3,29 @@ import { Card } from '../components/common/Card';
 import { Table } from '../components/common/Table';
 import axios from '../lib/axios';
 import toast from 'react-hot-toast';
-import { Verification } from '../types';
+import { Verification, Role } from '../types';
+import { useAuth } from '../context/AuthContext';
 
 export const Verifications: React.FC = () => {
+  const { user } = useAuth();
   const [verifications, setVerifications] = useState<Verification[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchVerifications();
-  }, []);
+  }, [user]);
 
   const fetchVerifications = async () => {
     try {
-      const response = await axios.get('/verifications');
+      const params: Record<string, any> = {};
+      
+      // Filter by university if user is UNIVERSITY role
+      if (user?.role === Role.UNIVERSITY && user.universityId) {
+        params.universityId = user.universityId;
+      }
+      // ADMIN sees all verifications (no filter)
+
+      const response = await axios.get('/verifications', { params });
       setVerifications(response.data.data || response.data);
     } catch (error) {
       toast.error('Failed to fetch verifications');
@@ -33,7 +43,7 @@ export const Verifications: React.FC = () => {
       accessor: ((row: Verification) =>
         new Date(row.verificationDate).toLocaleString()) as (row: Verification) => React.ReactNode,
     },
-    { header: 'IP Address', accessor: 'ipAddress' as keyof Verification },
+    // { header: 'IP Address', accessor: 'ipAddress' as keyof Verification },
   ];
 
   return (

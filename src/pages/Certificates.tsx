@@ -7,19 +7,22 @@ import { Input } from '../components/common/Input';
 import { Select } from '../components/common/Select';
 import axios from '../lib/axios';
 import toast from 'react-hot-toast';
-import { Certificate, Student, CertificateStatus } from '../types';
-import { Plus, Eye, Ban, Download } from 'lucide-react';
+import { Certificate, Student, CertificateStatus, Program } from '../types';
+import { Plus, Eye, Ban, FileText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Role } from '../types';
 import { QRCodeCanvas } from 'qrcode.react';
+import { calculateDegreeClassification } from '../lib/degreeClassification';
 
 export const Certificates: React.FC = () => {
   const { user } = useAuth();
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewingCertificate, setViewingCertificate] = useState<Certificate | null>(null);
+  const [viewingLoading, setViewingLoading] = useState(false);
   const [formData, setFormData] = useState({
     studentId: '',
     degreeTitle: '',
@@ -27,6 +30,7 @@ export const Certificates: React.FC = () => {
     graduationDate: '',
     pdfUrl: '',
   });
+  // (studentMarks supprimé : non utilisé)
 
   useEffect(() => {
     fetchData();
@@ -42,15 +46,51 @@ export const Certificates: React.FC = () => {
       }
 
       const certificatesRes = await axios.get('/certificates', { params });
-      setCertificates(certificatesRes.data.data || certificatesRes.data);
+      let certs = certificatesRes.data.data || certificatesRes.data;
 
+      // Fetch programs (needed for displaying program title even when API doesn't embed relations)
+      let loadedPrograms: Program[] = programs;
+      try {
+        const programParams: Record<string, any> = {};
+        // If API requires a university filter, try to provide one (university user OR infer from certificates list)
+        const inferredUniversityId =
+          user?.universityId ||
+          (Array.isArray(certs) && certs.length > 0 ? (certs[0] as any).universityId : undefined);
+        if (inferredUniversityId) programParams.universityId = inferredUniversityId;
+        const programsRes = await axios.get('/programs', { params: programParams });
+        loadedPrograms = programsRes.data.data || programsRes.data;
+        if (Array.isArray(loadedPrograms)) setPrograms(loadedPrograms);
+      } catch {
+        // Non-blocking: program listing can still work with embedded student.program if present
+      }
+      const programsById = new Map<string, Program>(
+        Array.isArray(loadedPrograms) ? loadedPrograms.map((p) => [p.id, p]) : []
+      );
+
+      let loadedStudents: Student[] = students;
       if (user?.role !== Role.STUDENT) {
         const studentParams = user?.role === Role.UNIVERSITY && user.universityId
           ? { universityId: user.universityId }
           : {};
         const studentsRes = await axios.get('/students', { params: studentParams });
-        setStudents(studentsRes.data.data || studentsRes.data);
+        loadedStudents = studentsRes.data.data || studentsRes.data;
+        setStudents(loadedStudents);
       }
+
+      // Inject program into certificate.student if missing
+      certs = certs.map((cert: Certificate) => {
+        let student = cert.student || loadedStudents.find((s) => s.id === cert.studentId);
+        if (student && !student.program && student.programId) {
+          const fromStudentList = loadedStudents.find((s) => s.id === student?.id);
+          if (fromStudentList?.program) student = { ...student, program: fromStudentList.program };
+          else {
+            const fromPrograms = programsById.get(student.programId);
+            if (fromPrograms) student = { ...student, program: fromPrograms };
+          }
+        }
+        return { ...cert, student };
+      });
+      setCertificates(certs);
     } catch (error) {
       toast.error('Failed to fetch data || check your connection or try again later.');
     } finally {
@@ -82,7 +122,6 @@ export const Certificates: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Vérifier d'abord si des étudiants sont disponibles
     if (students.length === 0) {
       toast.error('No students available. Please add students first.');
       return;
@@ -92,46 +131,53 @@ export const Certificates: React.FC = () => {
     console.log('formData at submit:', formData);
 
     try {
-      // Client-side validation
+      // Validation
       const requiredFields = ['studentId', 'degreeTitle', 'specialization', 'graduationDate'];
       const missing = requiredFields.filter((key) => {
         const val = (formData as any)[key];
         return !(val !== undefined && val !== null && String(val).trim().length > 0);
       });
-
-      // Vérification spécifique pour studentId
       if (!formData.studentId || formData.studentId === '') {
         toast.error('Please select a student from the dropdown list.');
         return;
       }
-
       if (missing.length > 0) {
-        console.warn('Certificate form missing fields:', missing, 'formData:', formData);
         toast.error(`All fields are required. Missing: ${missing.join(', ')}`);
         return;
       }
-      // Derive universityId either from current user (if UNIVERSITY) or from selected student
+      // Récupérer l'étudiant sélectionné et son universityId
       const selectedStudent = students.find((s) => s.id === formData.studentId);
       const universityId = user?.universityId || selectedStudent?.universityId;
-
-      console.log('Selected student:', selectedStudent);
-      console.log('User universityId:', user?.universityId);
-      console.log('Final universityId:', universityId);
-
       if (!universityId) {
         toast.error('Unable to determine university for this certificate. Please ensure the student belongs to a university.');
         return;
       }
 
-      // Prepare payload. Use null for optional fields instead of empty strings
-      const payload = {
+      // Récupérer les notes de l'étudiant (grades)
+      let marks: Array<{ mark: number; credits: number }> = [];
+      if (selectedStudent && selectedStudent.grades && Array.isArray(selectedStudent.grades)) {
+        marks = selectedStudent.grades.map((g: any) => ({
+          mark: g.mark,
+          credits: g.module?.credits || 0,
+        })).filter((g) => typeof g.mark === 'number' && typeof g.credits === 'number');
+      }
+
+      // Calculer la moyenne pondérée (finalMark)
+      let finalMark: number | undefined = undefined;
+      if (marks.length > 0) {
+        finalMark = calculateDegreeClassification(marks).averageMark;
+      }
+
+      // Préparer le payload
+      const payload: any = {
         studentId: String(formData.studentId),
         degreeTitle: String(formData.degreeTitle).trim(),
         specialization: String(formData.specialization).trim(),
         graduationDate: formData.graduationDate,
         universityId,
-        pdfUrl: 'https://example.com/placeholder.pdf', // URL temporaire obligatoire
+        pdfUrl: 'https://example.com/placeholder.pdf',
       };
+      if (finalMark !== undefined) payload.finalMark = finalMark;
 
       console.log('Issuing certificate - payload:', payload);
       const res = await axios.post('/certificates', payload);
@@ -141,23 +187,9 @@ export const Certificates: React.FC = () => {
       fetchData();
     } catch (error: unknown) {
       const err = error as { response?: { data?: any; status?: number } };
-      console.error('Certificate creation error:', err.response?.data ?? err);
-
-      console.error('Full error response:', err.response);
-      console.error('Error status:', err.response?.status);
-      console.error('Error data type:', typeof err.response?.data);
-      
-      // Afficher le contenu complet de l'erreur
-      if (err.response?.data) {
-        console.error('Error data content:', JSON.stringify(err.response.data, null, 2));
-      }
-
-      // If backend provides validation details, show the full payload; otherwise show message
       const serverMessage = err.response?.data?.message || err.response?.data || (err as any).message;
-      // Prefer a human-friendly message but include details for debugging
       if (typeof serverMessage === 'object') {
         const errorText = JSON.stringify(serverMessage, null, 2);
-        console.error('Parsed error object:', errorText);
         toast.error(`Server error: ${errorText}`);
       } else if (typeof serverMessage === 'string') {
         toast.error(serverMessage);
@@ -180,8 +212,57 @@ export const Certificates: React.FC = () => {
     }
   };
 
-  const handleViewDetails = (certificate: Certificate) => {
+  const handleViewDetails = async (certificate: Certificate) => {
+    // Open immediately with what we have, then hydrate with full details (grades, relations, etc.)
     setViewingCertificate(certificate);
+    setViewingLoading(true);
+    try {
+      const res = await axios.get(`/certificates/${certificate.id}`);
+      const raw = res.data;
+      // Try several common backend envelope patterns
+      const full: any =
+        (raw && (raw.data?.certificate || raw.data?.result || raw.data)) ||
+        raw.certificate ||
+        raw.result ||
+        raw;
+
+      // Debug helper: see exactly what we got from backend
+      console.log('Certificate details response:', raw, 'resolved certificate:', full);
+
+      if (full && typeof full === 'object') {
+        setViewingCertificate(full as Certificate);
+      }
+    } catch (error) {
+      // Non-blocking; keep modal open with basic info
+      console.error('Failed to fetch certificate details:', error);
+    } finally {
+      setViewingLoading(false);
+    }
+  };
+
+  const handleDownloadPDF = async (certificateId: string) => {
+    try {
+      const response = await axios.get(`/certificates/${certificateId}/pdf`, {
+        responseType: 'blob',
+      });
+
+      // Create a blob URL and trigger download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute(
+        'download',
+        `certificate-${new Date().getTime()}.pdf`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Certificate downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      toast.error('Failed to download certificate PDF');
+    }
   };
 
   // Helper to robustly extract student name fields from API objects that may use different keys
@@ -209,43 +290,50 @@ export const Certificates: React.FC = () => {
   };
 
   const columns = [
-    { header: 'Degree Title', accessor: 'degreeTitle' as keyof Certificate },
+    {
+      header: 'Program',
+      accessor: ((row: Certificate) => {
+        const getProgramTitle = (p: any) => p?.title ?? p?.name ?? p?.label ?? p?.programTitle ?? p?.programName;
+        const anyRow: any = row as any;
+        const student = row.student || students.find((st) => st.id === row.studentId);
+
+        // 1) Try embedded student.program
+        const titleFromStudent = getProgramTitle(student?.program);
+        if (titleFromStudent) return titleFromStudent;
+
+        // 2) Try programId from student, then from certificate itself
+        const programId = student?.programId ?? anyRow.programId;
+        if (!programId) return '—';
+        const program = programs.find((p) => p.id === programId);
+        return getProgramTitle(program) || '—';
+      }) as (row: Certificate) => React.ReactNode,
+    },
     {
       header: 'Student',
       accessor: ((row: Certificate) => {
         const s = row.student || students.find((st) => st.id === row.studentId);
         if (!s) return '—';
-        
-        // Afficher seulement le nom complet
         const first = s.firstName;
         const last = s.lastName;
         const full = `${(first || '').trim()} ${(last || '').trim()}`.trim();
-        
-        if (full) return full;
-        
-        // Fallback au matricule si aucun nom n'est disponible
-        const matricule = s.matricule;
-        return matricule || s.id || '—';
+        return full || s.studentId || s.id || '—';
       }) as (row: Certificate) => React.ReactNode,
     },
-    { header: 'Specialization', accessor: 'specialization' as keyof Certificate },
+    {
+      header: 'Final Mark',
+      accessor: ((row: Certificate) => {
+        const raw = (row as any).finalMark;
+        const mark = typeof raw === 'number' ? raw : raw !== undefined && raw !== null ? Number(raw) : NaN;
+        return Number.isFinite(mark) ? `${mark.toFixed(2)}%` : '—';
+      }) as (row: Certificate) => React.ReactNode,
+    },
+    {
+      header: 'Degree Classification',
+      accessor: ((row: Certificate) => row.degreeClassification || '—') as (row: Certificate) => React.ReactNode,
+    },
     {
       header: 'Graduation Date',
       accessor: ((row: Certificate) => new Date(row.graduationDate).toLocaleDateString()) as (row: Certificate) => React.ReactNode,
-    },
-    {
-      header: 'Status',
-      accessor: ((row: Certificate) => (
-        <span
-          className={`px-2 py-1 text-xs font-medium rounded-full ${
-            row.status === CertificateStatus.ACTIVE
-              ? 'bg-green-100 text-green-800'
-              : 'bg-red-100 text-red-800'
-          }`}
-        >
-          {row.status}
-        </span>
-      )) as (row: Certificate) => React.ReactNode,
     },
     {
       header: 'Actions',
@@ -265,14 +353,6 @@ export const Certificates: React.FC = () => {
               <Ban className="w-5 h-5" />
             </button>
           )}
-          <a
-            href={row.pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-green-600 hover:text-green-800"
-          >
-            <Download className="w-5 h-5" />
-          </a>
         </div>
       )) as (row: Certificate) => React.ReactNode,
     },
@@ -342,36 +422,106 @@ export const Certificates: React.FC = () => {
           title="Certificate Details"
           size="xl"
         >
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-gray-600">Degree Title</label>
-              <p className="text-gray-900">{viewingCertificate.degreeTitle}</p>
+          {viewingLoading && (
+            <div className="flex justify-center items-center py-6">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
-            <div>
-              <label className="text-sm font-medium text-gray-600">Student</label>
-              <p className="text-gray-900">
-                {formatStudentDisplay(viewingCertificate.student || students.find((st) => st.id === viewingCertificate.studentId))}
-              </p>
+          )}
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-600">Student</label>
+                <p className="text-gray-900">
+                  {formatStudentDisplay(viewingCertificate.student || students.find((st) => st.id === viewingCertificate.studentId))}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-600">Graduation Date</label>
+                <p className="text-gray-900">
+                  {new Date(viewingCertificate.graduationDate).toLocaleDateString()}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-600">Final Mark</label>
+                <p className="text-gray-900 font-medium">
+                  {(() => {
+                    const raw = (viewingCertificate as any).finalMark;
+                    const mark =
+                      typeof raw === 'number' ? raw : raw !== undefined && raw !== null ? Number(raw) : NaN;
+                    return Number.isFinite(mark) ? `${mark.toFixed(2)}%` : '—';
+                  })()}
+                </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-600">Degree Classification</label>
+                <p className="text-gray-900 font-medium">
+                  {viewingCertificate.degreeClassification || '—'}
+                </p>
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium text-gray-600">Specialization</label>
-              <p className="text-gray-900">{viewingCertificate.specialization}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-600">Graduation Date</label>
-              <p className="text-gray-900">
-                {new Date(viewingCertificate.graduationDate).toLocaleDateString()}
-              </p>
-            </div>
-            {/* <div>
-              <label className="text-sm font-medium text-gray-600">QR Hash</label>
-              <p className="text-gray-900 font-mono text-sm break-all">
-                {viewingCertificate.qrHash}
-              </p>
-            </div> */}
-            <div>
-              <label className="text-sm font-medium text-gray-600">QR Code</label>
-              <div className="mt-2">
+
+            {/* Grades Table */}
+            {viewingCertificate.grades && viewingCertificate.grades.length > 0 && (
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Student Grades</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 px-3 font-medium text-gray-600">
+                          Code
+                        </th>
+                        <th className="text-right py-2 px-3 font-medium text-gray-600">
+                          Credits
+                        </th>
+                        <th className="text-right py-2 px-3 font-medium text-gray-600">
+                          Mark
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {viewingCertificate.grades.map((grade) => (
+                        <tr key={grade.id} className="border-b hover:bg-gray-50">
+                          <td className="py-2 px-3">
+                            {grade.module?.code || (grade as any).moduleId || 'N/A'}
+                          </td>
+                          <td className="py-2 px-3 text-right">
+                            {grade.module?.credits || 0}
+                          </td>
+                          <td className="py-2 px-3 text-right font-medium">
+                            {Number.isFinite(Number(grade.mark)) ? Number(grade.mark).toFixed(2) : '—'}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Average Grade (legacy, if present) */}
+                {viewingCertificate.averageGrade !== undefined && (
+                  <div className="mt-4 p-4 bg-purple-50 rounded-lg">
+                    <p className="text-sm text-gray-600">Average Grade</p>
+                    <p className="text-2xl font-bold text-purple-600">
+                      {viewingCertificate.averageGrade.toFixed(2)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            {!viewingLoading &&
+              (!viewingCertificate.grades || viewingCertificate.grades.length === 0) && (
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Student Grades</h3>
+                <p className="text-sm text-gray-600">
+                  No module grades available for this certificate.
+                </p>
+              </div>
+            )}
+
+            {/* QR Code */}
+            <div className="border-t pt-6">
+              <label className="text-sm font-medium text-gray-600">QR Code for Verification</label>
+              <div className="mt-4 flex justify-center">
                 <QRCodeCanvas
                   value={`${window.location.origin}/verify/${viewingCertificate.qrHash}`}
                   size={200}
@@ -382,6 +532,19 @@ export const Certificates: React.FC = () => {
                 />
               </div>
             </div>
+
+            {/* PDF Download Button */}
+            {viewingCertificate.status === CertificateStatus.ACTIVE && (
+              <div className="border-t pt-6">
+                <Button
+                  onClick={() => handleDownloadPDF(viewingCertificate.id)}
+                  className="w-full flex items-center justify-center"
+                >
+                  <FileText className="w-5 h-5 mr-2" />
+                  Download Certificate as PDF
+                </Button>
+              </div>
+            )}
           </div>
         </Modal>
       )}
