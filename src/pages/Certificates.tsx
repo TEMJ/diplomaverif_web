@@ -98,107 +98,6 @@ export const Certificates: React.FC = () => {
     }
   };
 
-  const handleOpenModal = () => {
-    // Si un seul étudiant disponible, le pré-sélectionner
-    // Sinon, laisser vide mais avertir l'utilisateur
-    const defaultStudentId = students.length === 1 ? students[0].id : '';
-    
-    setFormData({
-      studentId: defaultStudentId,
-      degreeTitle: '',
-      specialization: '',
-      graduationDate: '',
-      pdfUrl: '',
-    });
-    
-    // Si plusieurs étudiants et aucun n'est présélectionné, avertir l'utilisateur
-    if (students.length > 1) {
-      toast.error('Please select a student from the dropdown list.');
-    }
-    
-    setIsModalOpen(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (students.length === 0) {
-      toast.error('No students available. Please add students first.');
-      return;
-    }
-
-    // Debug: log the current formData at submit time
-    console.log('formData at submit:', formData);
-
-    try {
-      // Validation
-      const requiredFields = ['studentId', 'degreeTitle', 'specialization', 'graduationDate'];
-      const missing = requiredFields.filter((key) => {
-        const val = (formData as any)[key];
-        return !(val !== undefined && val !== null && String(val).trim().length > 0);
-      });
-      if (!formData.studentId || formData.studentId === '') {
-        toast.error('Please select a student from the dropdown list.');
-        return;
-      }
-      if (missing.length > 0) {
-        toast.error(`All fields are required. Missing: ${missing.join(', ')}`);
-        return;
-      }
-      // Récupérer l'étudiant sélectionné et son universityId
-      const selectedStudent = students.find((s) => s.id === formData.studentId);
-      const universityId = user?.universityId || selectedStudent?.universityId;
-      if (!universityId) {
-        toast.error('Unable to determine university for this certificate. Please ensure the student belongs to a university.');
-        return;
-      }
-
-      // Récupérer les notes de l'étudiant (grades)
-      let marks: Array<{ mark: number; credits: number }> = [];
-      if (selectedStudent && selectedStudent.grades && Array.isArray(selectedStudent.grades)) {
-        marks = selectedStudent.grades.map((g: any) => ({
-          mark: g.mark,
-          credits: g.module?.credits || 0,
-        })).filter((g) => typeof g.mark === 'number' && typeof g.credits === 'number');
-      }
-
-      // Calculer la moyenne pondérée (finalMark)
-      let finalMark: number | undefined = undefined;
-      if (marks.length > 0) {
-        finalMark = calculateDegreeClassification(marks).averageMark;
-      }
-
-      // Préparer le payload
-      const payload: any = {
-        studentId: String(formData.studentId),
-        degreeTitle: String(formData.degreeTitle).trim(),
-        specialization: String(formData.specialization).trim(),
-        graduationDate: formData.graduationDate,
-        universityId,
-        pdfUrl: 'https://example.com/placeholder.pdf',
-      };
-      if (finalMark !== undefined) payload.finalMark = finalMark;
-
-      console.log('Issuing certificate - payload:', payload);
-      const res = await axios.post('/certificates', payload);
-      console.log('Certificate creation response:', res);
-      toast.success('Certificate created successfully');
-      setIsModalOpen(false);
-      fetchData();
-    } catch (error: unknown) {
-      const err = error as { response?: { data?: any; status?: number } };
-      const serverMessage = err.response?.data?.message || err.response?.data || (err as any).message;
-      if (typeof serverMessage === 'object') {
-        const errorText = JSON.stringify(serverMessage, null, 2);
-        toast.error(`Server error: ${errorText}`);
-      } else if (typeof serverMessage === 'string') {
-        toast.error(serverMessage);
-      } else {
-        toast.error('An unknown error occurred');
-      }
-    }
-  };
-
   const handleRevoke = async (id: string) => {
     if (!confirm('Are you sure you want to revoke this certificate?')) return;
 
@@ -362,58 +261,12 @@ export const Certificates: React.FC = () => {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Certificates</h1>
-        {user?.role !== Role.STUDENT && (
-          <Button onClick={handleOpenModal}>
-            <Plus className="w-5 h-5 mr-2 inline" />
-            Issue Certificate
-          </Button>
-        )}
       </div>
 
       <Card>
         <Table columns={columns} data={certificates} loading={loading} />
       </Card>
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Issue Certificate"
-      >
-        <form onSubmit={handleSubmit}>
-          <Select
-            label="Student"
-            value={formData.studentId}
-            onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-            options={students.map((s) => ({ value: s.id, label: formatStudentDisplay(s) }))}
-            required
-          />
-          <Input
-            label="Degree Title"
-            value={formData.degreeTitle}
-            onChange={(e) => setFormData({ ...formData, degreeTitle: e.target.value })}
-            required
-          />
-          <Input
-            label="Specialization"
-            value={formData.specialization}
-            onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-            required
-          />
-          <Input
-            label="Graduation Date"
-            type="date"
-            value={formData.graduationDate}
-            onChange={(e) => setFormData({ ...formData, graduationDate: e.target.value })}
-            required
-          />
-          <div className="flex justify-end space-x-2 mt-6">
-            <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit">Issue Certificate</Button>
-          </div>
-        </form>
-      </Modal>
 
       {viewingCertificate && (
         <Modal

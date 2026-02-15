@@ -7,10 +7,10 @@ import {
   Users,
   Award,
   CheckCircle,
-  FileText,
   BookOpen,
   Grid3x3,
   Send,
+  Settings,
 } from 'lucide-react';
 import { Role } from '../../types';
 
@@ -34,39 +34,44 @@ export const Sidebar: React.FC = () => {
       path: '/students',
       label: 'Students',
       icon: Users,
-      roles: [Role.ADMIN, Role.UNIVERSITY],
+      roles: [Role.UNIVERSITY],
     },
     {
       path: '/programs',
       label: 'Programs',
       icon: BookOpen,
-      roles: [Role.ADMIN, Role.UNIVERSITY],
+      roles: [Role.UNIVERSITY],
     },
     {
       path: '/modules',
       label: 'Modules',
       icon: Grid3x3,
-      roles: [Role.ADMIN, Role.UNIVERSITY],
-    },
-    {
-      path: '/certificates',
-      label: 'Certificates',
-      icon: Award,
-      roles: [Role.ADMIN, Role.UNIVERSITY, Role.STUDENT],
+      roles: [Role.UNIVERSITY],
     },
     {
       path: '/certificate-issuance',
       label: 'Issue Certificates',
       icon: Send,
-      roles: [Role.ADMIN, Role.UNIVERSITY],
+      roles: [Role.UNIVERSITY],
+    },
+    {
+      path: '/certificates',
+      label: 'Certificates List',
+      icon: Award,
+      roles: [Role.UNIVERSITY, Role.STUDENT],
     },
     {
       path: '/verifications',
       label: 'Verifications',
       icon: CheckCircle,
-      roles: [Role.ADMIN, Role.UNIVERSITY],
+      roles: [Role.UNIVERSITY],
     },
-
+    {
+      path: '/settings',
+      label: 'Settings',
+      icon: Settings,
+      roles: [Role.ADMIN, Role.UNIVERSITY, Role.STUDENT],
+    },
   ];
 
   const filteredNavItems = navItems.filter((item) =>

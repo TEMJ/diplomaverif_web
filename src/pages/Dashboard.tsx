@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Card } from '../components/common/Card';
 import axios from '../lib/axios';
 import { Role } from '../types';
-import { Building2, Users, Award, CheckCircle } from 'lucide-react';
+import { Building2, Users, Award, CheckCircle, BookOpen, Grid3x3 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface Stats {
@@ -11,10 +11,12 @@ interface Stats {
   students?: number;
   certificates?: number;
   verifications?: number;
+  programs?: number;
+  modules?: number;
 }
 
 export const Dashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, university, student } = useAuth();
   const [stats, setStats] = useState<Stats>({});
   const [loading, setLoading] = useState(true);
 
@@ -43,7 +45,9 @@ export const Dashboard: React.FC = () => {
       // Always fetch certificates and verifications
       requests.push(
         axios.get('/certificates', { params }).then(res => ({ key: 'certificates', data: res.data })),
-        axios.get('/verifications', { params }).then(res => ({ key: 'verifications', data: res.data }))
+        axios.get('/verifications', { params }).then(res => ({ key: 'verifications', data: res.data })),
+        axios.get('/programs', { params }).then(res => ({ key: 'programs', data: res.data })),
+        axios.get('/modules', { params }).then(res => ({ key: 'modules', data: res.data })),
       );
 
       // Wait for all requests and process results
@@ -54,7 +58,9 @@ export const Dashboard: React.FC = () => {
         universities: 0,
         students: 0,
         certificates: 0,
-        verifications: 0
+        verifications: 0,
+        programs: 0,
+        modules: 0,
       };
 
       // Process each result
@@ -87,21 +93,35 @@ export const Dashboard: React.FC = () => {
       value: stats.students,
       icon: Users,
       color: 'bg-green-500',
-      show: user?.role === Role.ADMIN || user?.role === Role.UNIVERSITY,
+      show: user?.role === Role.UNIVERSITY,
     },
     {
       title: 'Certificates',
       value: stats.certificates,
       icon: Award,
       color: 'bg-yellow-500',
-      show: true,
+      show: user?.role === Role.UNIVERSITY || user?.role === Role.STUDENT,
     },
     {
       title: 'Verifications',
       value: stats.verifications,
       icon: CheckCircle,
       color: 'bg-purple-500',
-      show: user?.role === Role.ADMIN || user?.role === Role.UNIVERSITY,
+      show: user?.role === Role.UNIVERSITY,
+    },
+    {
+      title: 'Programs',
+      value: stats.programs,
+      icon: BookOpen,
+      color: 'bg-red-500',
+      show: user?.role === Role.UNIVERSITY,
+    },
+    {
+      title: 'Modules',
+      value: stats.modules,
+      icon: Grid3x3,
+      color: 'bg-blue-500',
+      show: user?.role === Role.UNIVERSITY,
     },
   ];
 
@@ -138,14 +158,44 @@ export const Dashboard: React.FC = () => {
       </div>
 
       <Card title="Welcome to DiplomaVerif">
-        <p className="text-gray-600">
-          {user?.role === Role.ADMIN &&
-            'As an administrator, you have full access to manage universities, students, certificates, and verifications.'}
-          {user?.role === Role.UNIVERSITY &&
-            'As a university, you can manage your students, issue certificates, and view verifications.'}
-          {user?.role === Role.STUDENT &&
-            'As a student, you can view your certificates and academic records.'}
-        </p>
+        {(user?.role === Role.UNIVERSITY && university) || (user?.role === Role.STUDENT && student) ? (
+          <div className="space-y-2">
+            {user?.role === Role.UNIVERSITY && university && (
+              <>
+                <p className="font-medium text-gray-900">{university.name}</p>
+                {university.address && (
+                  <p className="text-sm text-gray-600">{university.address}</p>
+                )}
+                <p className="text-gray-600 mt-2">
+                  As a university, you can manage your students, issue certificates, and view verifications.
+                </p>
+              </>
+            )}
+            {user?.role === Role.STUDENT && student && (
+              <>
+                <p className="font-medium text-gray-900">
+                  {[student.firstName, student.lastName].filter(Boolean).join(' ')}
+                </p>
+                <div className="text-sm text-gray-600 space-y-0.5">
+                  {student.university?.name && <p>University: {student.university.name}</p>}
+                  {student.program?.title && <p>Program: {student.program.title}</p>}
+                </div>
+                <p className="text-gray-600 mt-2">
+                  As a student, you can view your certificates and academic records.
+                </p>
+              </>
+            )}
+          </div>
+        ) : (
+          <p className="text-gray-600">
+            {user?.role === Role.ADMIN &&
+              'As an administrator, you have full access to manage universities'}
+            {user?.role === Role.UNIVERSITY &&
+              'As a university, you can manage your students, issue certificates, and view verifications.'}
+            {user?.role === Role.STUDENT &&
+              'As a student, you can view your certificates and academic records.'}
+          </p>
+        )}
       </Card>
     </div>
   );

@@ -8,14 +8,16 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <div className="flex">
+    <div className="h-screen overflow-hidden bg-gray-50">
+      <header className="fixed top-0 left-0 right-0 z-50 h-16">
+        <Navbar />
+      </header>
+      <div className="fixed top-16 left-0 bottom-0 z-40 w-64 overflow-hidden">
         <Sidebar />
-        <main className="flex-1 p-8">
-          {children}
-        </main>
       </div>
+      <main className="fixed top-16 left-64 right-0 bottom-0 overflow-y-auto p-8">
+        {children}
+      </main>
     </div>
   );
 };

@@ -18,6 +18,7 @@ import { Subjects } from './pages/Subjects';
 import { Grades } from './pages/Grades';
 import { Programs } from './pages/Programs';
 import { Modules } from './pages/Modules';
+import { Settings } from './pages/Settings';
 
 function App() {
   return (
@@ -137,6 +138,17 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <Grades />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Settings />
                 </Layout>
               </ProtectedRoute>
             }
