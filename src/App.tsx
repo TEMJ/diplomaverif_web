@@ -6,6 +6,7 @@ import { Layout } from './components/layout/Layout';
 import { Toaster } from 'react-hot-toast';
 
 import { Login } from './pages/Login';
+import { Landing } from './pages/Landing';
 import { Dashboard } from './pages/Dashboard';
 import { Universities } from './pages/Universities';
 import { Students } from './pages/Students';
@@ -154,8 +155,8 @@ function App() {
             }
           />
 
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

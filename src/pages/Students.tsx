@@ -30,6 +30,7 @@ export const Students: React.FC = () => {
   const [universities, setUniversities] = useState<University[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -53,9 +54,19 @@ export const Students: React.FC = () => {
     fetchData();
   }, []);
 
+  // Instant (debounced) search when searchTerm changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchData();
+    }, 400);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, user?.role, user?.universityId]);
+
   const fetchData = async () => {
     setLoading(true);
-    setStudents([]);
+    // Don't clear students immediately - keep them until new data arrives
+    // setStudents([]);
     setUniversities([]);
     setPrograms([]);
 
@@ -84,7 +95,13 @@ export const Students: React.FC = () => {
         params.universityId = user.universityId;
       }
 
+      if (searchTerm.trim()) {
+        params.search = searchTerm.trim();
+      }
+
+      console.log('Fetching students with params:', params);
       const studentsRes = await axios.get('/students', { params });
+      console.log('Students response:', studentsRes.data);
 
       if (!studentsRes.data) {
         throw new Error('Empty response from server');
@@ -97,6 +114,7 @@ export const Students: React.FC = () => {
       }
 
       setStudents(studentsList);
+      console.log('Students set:', studentsList.length, 'items');
 
       if (user.role === Role.ADMIN) {
         const universitiesRes = await axios.get('/universities');
@@ -256,6 +274,40 @@ export const Students: React.FC = () => {
     }
   };
 
+  const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  const highlightText = (text: string | null | undefined): React.ReactNode => {
+    const term = searchTerm.trim();
+    if (!text) return '';
+    if (!term) return text;
+
+    // Support multi-word searches (e.g. "Doe John") by highlighting each token independently
+    const tokens = term.split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return text;
+
+    // Prefer longer tokens first to avoid partial overshadowing (e.g. "jo" vs "john")
+    const sortedTokens = [...tokens].sort((a, b) => b.length - a.length);
+    const lowerTokens = sortedTokens.map((t) => t.toLowerCase());
+
+    const regex = new RegExp(`(${sortedTokens.map(escapeRegExp).join('|')})`, 'gi');
+    const parts = text.split(regex);
+
+    return (
+      <span>
+        {parts.map((part, idx) => {
+          const isMatch = lowerTokens.includes(part.toLowerCase());
+          return isMatch ? (
+            <span key={idx} className="bg-yellow-200 font-semibold">
+              {part}
+            </span>
+          ) : (
+            <React.Fragment key={idx}>{part}</React.Fragment>
+          );
+        })}
+      </span>
+    );
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this student?')) return;
 
@@ -270,20 +322,25 @@ export const Students: React.FC = () => {
   };
 
   const columns = [
-    
     {
       header: 'Student ID',
-      accessor: ((row: Student) => row.studentId) as (row: Student) => React.ReactNode,
+      accessor: ((row: Student) => highlightText(row.studentId)) as (row: Student) => React.ReactNode,
     },
     {
       header: 'Full Name',
-      accessor: ((row: Student) => `${row.firstName} ${row.lastName}`) as (row: Student) => React.ReactNode,
+      accessor: ((row: Student) =>
+        highlightText(`${row.firstName} ${row.lastName}`)) as (row: Student) => React.ReactNode,
     },
     {
       header: 'Program',
-      accessor: ((row: Student) => row.program?.title || '—') as (row: Student) => React.ReactNode,
+      accessor: ((row: Student) => highlightText(row.program?.title || '—')) as (
+        row: Student
+      ) => React.ReactNode,
     },
-    { header: 'Email', accessor: 'email' as keyof Student },
+    {
+      header: 'Email',
+      accessor: ((row: Student) => highlightText(row.email)) as (row: Student) => React.ReactNode,
+    },
     {
       header: 'Enrollment Date',
       accessor: ((row: Student) => row.enrollmentDate ? new Date(row.enrollmentDate).toLocaleDateString() : 'N/A') as (row: Student) => React.ReactNode,
@@ -302,7 +359,7 @@ export const Students: React.FC = () => {
           >
             <Edit className="w-5 h-5" />
           </button>
-          {user?.role === Role.ADMIN && (
+          {user?.role === Role.UNIVERSITY && (
             <button
               onClick={() => handleDelete(row.id)}
               className="text-red-600 hover:text-red-800"
@@ -326,6 +383,15 @@ export const Students: React.FC = () => {
       </div>
 
       <Card>
+        <div className="mb-4">
+          <Input
+            label=""
+            placeholder="Search by name, email or ID"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="mb-0"
+          />
+        </div>
         <Table columns={columns} data={students} loading={loading} />
       </Card>
 

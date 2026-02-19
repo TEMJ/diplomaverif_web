@@ -30,6 +30,7 @@ export const Universities: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUniversity, setEditingUniversity] = useState<University | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState<UniversityFormData>({
     name: '',
     address: '',
@@ -52,9 +53,22 @@ export const Universities: React.FC = () => {
     fetchUniversities();
   }, []);
 
+  // Instant (debounced) search when searchTerm changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      fetchUniversities();
+    }, 400);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
   const fetchUniversities = async () => {
     try {
-      const response = await axios.get('/universities', { params: { limit: 1000 } });
+      const params: Record<string, any> = { limit: 1000 };
+      if (searchTerm.trim()) {
+        params.search = searchTerm.trim();
+      }
+      const response = await axios.get('/universities', { params });
       setUniversities(response.data.data || response.data);
     } catch (error) {
       toast.error('Failed to fetch universities');
@@ -244,6 +258,39 @@ export const Universities: React.FC = () => {
     }
   };
 
+  const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  const highlightText = (text: string | null | undefined): React.ReactNode => {
+    const term = searchTerm.trim();
+    if (!text) return '';
+    if (!term) return text;
+
+    // Support multi-word searches by highlighting each token independently
+    const tokens = term.split(/\s+/).filter(Boolean);
+    if (tokens.length === 0) return text;
+
+    const sortedTokens = [...tokens].sort((a, b) => b.length - a.length);
+    const lowerTokens = sortedTokens.map((t) => t.toLowerCase());
+
+    const regex = new RegExp(`(${sortedTokens.map(escapeRegExp).join('|')})`, 'gi');
+    const parts = text.split(regex);
+
+    return (
+      <span>
+        {parts.map((part, idx) => {
+          const isMatch = lowerTokens.includes(part.toLowerCase());
+          return isMatch ? (
+            <span key={idx} className="bg-yellow-200 font-semibold">
+              {part}
+            </span>
+          ) : (
+            <React.Fragment key={idx}>{part}</React.Fragment>
+          );
+        })}
+      </span>
+    );
+  };
+
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this university?')) return;
 
@@ -258,11 +305,36 @@ export const Universities: React.FC = () => {
   };
 
   const columns = [
-    { header: 'Name', accessor: 'name' as keyof University },
-    { header: 'Address', accessor: 'address' as keyof University },
-    { header: 'Email', accessor: 'contactEmail' as keyof University },
-    { header: 'Phone', accessor: 'phone' as keyof University },
-    { header: 'UKPRN', accessor: 'ukprn' as keyof University },
+    {
+      header: 'Name',
+      accessor: ((row: University) => highlightText(row.name)) as (
+        row: University
+      ) => React.ReactNode,
+    },
+    {
+      header: 'Address',
+      accessor: ((row: University) => highlightText(row.address)) as (
+        row: University
+      ) => React.ReactNode,
+    },
+    {
+      header: 'Email',
+      accessor: ((row: University) => highlightText(row.contactEmail)) as (
+        row: University
+      ) => React.ReactNode,
+    },
+    {
+      header: 'Phone',
+      accessor: ((row: University) => highlightText(row.phone)) as (
+        row: University
+      ) => React.ReactNode,
+    },
+    {
+      header: 'UKPRN',
+      accessor: ((row: University) => highlightText(row.ukprn)) as (
+        row: University
+      ) => React.ReactNode,
+    },
     {
       header: 'Actions',
       accessor: ((row: University) => (
@@ -295,6 +367,15 @@ export const Universities: React.FC = () => {
       </div>
 
       <Card>
+        <div className="mb-4">
+          <Input
+            label=""
+            placeholder="Search by name or UKPRN"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="mb-0"
+          />
+        </div>
         <Table columns={columns} data={universities} loading={loading} />
       </Card>
 

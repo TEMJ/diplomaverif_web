@@ -223,321 +223,403 @@ export const VerifyCertificate: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-4">
       <div className="max-w-4xl mx-auto py-8">
-        <div className="text-center mb-8">
+        <div className="text-center mb-10">
           <div className="flex justify-center mb-4">
-            <div className="bg-blue-600 p-4 rounded-full">
+            <div className="bg-blue-600 p-4 rounded-2xl shadow-lg shadow-blue-200">
               <Award className="w-12 h-12 text-white" />
             </div>
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Certificate Verification</h1>
-          <p className="text-gray-600">Verify the authenticity of diplomas and certificates</p>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Public portal to verify the authenticity and status of academic diplomas and certificates.
+          </p>
         </div>
 
-        <Card>
-          {/* Search Mode Tabs */}
-          <div className="flex gap-2 mb-6 border-b border-gray-200">
-            <button
-              onClick={() => setSearchMode('qr')}
-              className={`pb-3 px-4 font-medium transition-colors ${
-                searchMode === 'qr'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Camera className="w-4 h-4" />
-                QR Code / Hash
-              </div>
-            </button>
-            <button
-              onClick={() => setSearchMode('id')}
-              className={`pb-3 px-4 font-medium transition-colors ${
-                searchMode === 'id'
-                  ? 'text-blue-600 border-b-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Search className="w-4 h-4" />
-                Certificate / Student ID
-              </div>
-            </button>
-          </div>
-
-          {/* QR Scanner */}
-          {showQRScanner && searchMode === 'qr' && (
-            <div className="mb-6 p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-semibold text-gray-900">QR Code Scanner</h3>
-                <button
-                  onClick={stopQRScanner}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                className="w-full rounded-lg bg-black max-h-96 object-cover"
-              />
-              <canvas ref={canvasRef} className="hidden" />
-              <p className="text-sm text-gray-600 mt-4">
-                Position the QR code within the frame to scan it.
-              </p>
-            </div>
-          )}
-
-          {/* Search Form */}
-          <form onSubmit={handleVerify}>
-            {searchMode === 'qr' ? (
-              <div className="space-y-4">
-                <Input
-                  label="QR Hash Code or URL"
-                  value={qrHash}
-                  onChange={(e) => setQrHash(e.target.value)}
-                  placeholder="Paste QR hash or scan with camera"
-                  required={!showQRScanner}
-                />
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    onClick={startQRScanner}
-                    disabled={showQRScanner}
-                    className="flex-1 flex items-center justify-center gap-2"
-                  >
-                    <Camera className="w-4 h-4" />
-                    Scan QR Code
-                  </Button>
-                  <Button type="submit" disabled={loading} className="flex-1">
-                    {loading ? 'Verifying...' : 'Verify Certificate'}
-                  </Button>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1.2fr)] items-start">
+          {/* Left: search & QR */}
+          <Card>
+            {/* Search Mode Tabs */}
+            <div className="flex gap-2 mb-6 border-b border-gray-200">
+              <button
+                onClick={() => setSearchMode('qr')}
+                className={`pb-3 px-4 font-medium transition-colors ${
+                  searchMode === 'qr'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Camera className="w-4 h-4" />
+                  QR Code / Hash
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <Input
-                  label="Certificate ID or Student ID"
-                  value={studentId}
-                  onChange={(e) => setStudentId(e.target.value)}
-                  placeholder="Enter Certificate ID (e.g., CERT-2024-001) or Student ID (e.g., 2024001)"
-                  required
-                />
-                <Button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2">
+              </button>
+              <button
+                onClick={() => setSearchMode('id')}
+                className={`pb-3 px-4 font-medium transition-colors ${
+                  searchMode === 'id'
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <div className="flex items-center gap-2">
                   <Search className="w-4 h-4" />
-                  {loading ? 'Searching...' : 'Search Certificate'}
-                </Button>
-              </div>
-            )}
-          </form>
-        </Card>
+                  Certificate / Student ID
+                </div>
+              </button>
+            </div>
 
-        {notFound && (
-          <Card className="mt-6 border-2 border-red-500">
-            <div className="flex items-center space-x-4">
-              <XCircle className="w-12 h-12 text-red-500 flex-shrink-0" />
-              <div>
-                <h3 className="text-xl font-bold text-red-600">Certificate Not Found</h3>
-                <p className="text-gray-600 mt-1">
-                  This certificate could not be found in our system. It may be invalid or revoked.
+            {/* QR Scanner */}
+            {showQRScanner && searchMode === 'qr' && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold text-gray-900">QR Code Scanner</h3>
+                  <button
+                    onClick={stopQRScanner}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full rounded-lg bg-black max-h-96 object-cover"
+                />
+                <canvas ref={canvasRef} className="hidden" />
+                <p className="text-sm text-gray-600 mt-4">
+                  Position the QR code within the frame to scan it.
                 </p>
               </div>
-            </div>
+            )}
+
+            {/* Search Form */}
+            <form onSubmit={handleVerify}>
+              {searchMode === 'qr' ? (
+                <div className="space-y-4">
+                  <Input
+                    label="QR Hash Code or URL"
+                    value={qrHash}
+                    onChange={(e) => setQrHash(e.target.value)}
+                    placeholder="Paste QR hash or scan with camera"
+                    required={!showQRScanner}
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      onClick={startQRScanner}
+                      disabled={showQRScanner}
+                      className="flex-1 flex items-center justify-center gap-2"
+                    >
+                      <Camera className="w-4 h-4" />
+                      Scan QR Code
+                    </Button>
+                    <Button type="submit" disabled={loading} className="flex-1">
+                      {loading ? 'Verifying...' : 'Verify Certificate'}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <Input
+                    label="Certificate ID or Student ID"
+                    value={studentId}
+                    onChange={(e) => setStudentId(e.target.value)}
+                    placeholder="Enter Certificate ID (e.g., CERT-2024-001) or Student ID (e.g., 2024001)"
+                    required
+                  />
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full flex items-center justify-center gap-2"
+                  >
+                    <Search className="w-4 h-4" />
+                    {loading ? 'Searching...' : 'Search Certificate'}
+                  </Button>
+                </div>
+              )}
+            </form>
           </Card>
-        )}
 
-        {certificate && (
-          <>
-            <Card className={`mt-6 border-2 ${
-              certificate.status === CertificateStatus.ACTIVE
-                ? 'border-green-500'
-                : 'border-red-500'
-            }`}>
-              <div className="flex items-start space-x-4">
-                {certificate.status === CertificateStatus.ACTIVE ? (
-                  <CheckCircle className="w-12 h-12 text-green-500 flex-shrink-0" />
-                ) : (
+          {/* Right: results & details */}
+          <div className="space-y-6">
+            {notFound && (
+              <Card className="border-2 border-red-500">
+                <div className="flex items-center space-x-4">
                   <XCircle className="w-12 h-12 text-red-500 flex-shrink-0" />
-                )}
-                <div className="flex-1">
-                  <h3 className={`text-xl font-bold ${
+                  <div>
+                    <h3 className="text-xl font-bold text-red-600">Certificate Not Found</h3>
+                    <p className="text-gray-600 mt-1">
+                      This certificate could not be found in our system. It may be invalid or revoked.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {certificate && (
+              <>
+                <Card
+                  className={`border-2 ${
                     certificate.status === CertificateStatus.ACTIVE
-                      ? 'text-green-600'
-                      : 'text-red-600'
-                  }`}>
-                    {certificate.status === CertificateStatus.ACTIVE
-                      ? 'Valid Certificate'
-                      : 'Revoked Certificate'}
-                  </h3>
-                  <div className="mt-4 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      {(() => {
-                        const raw = (certificate as any).finalMark;
-                        const mark =
-                          typeof raw === 'number' ? raw : raw !== undefined && raw !== null ? Number(raw) : NaN;
-                        return Number.isFinite(mark) ? (
-                        <div className="p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
-                          <p className="text-xs text-gray-600 font-medium">Final Mark</p>
-                          <p className="text-2xl font-bold text-blue-600">{mark.toFixed(2)}%</p>
-                        </div>
-                        ) : null;
-                      })()}
-                      {certificate.degreeClassification && (
-                        <div className="p-3 bg-green-50 border-l-4 border-green-500 rounded">
-                          <p className="text-xs text-gray-600 font-medium">Classification</p>
-                          <p className="text-lg font-bold text-green-600">{certificate.degreeClassification}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-600 mb-2">Student Information</h4>
-                        {certificate.student ? (
-                          <div className="space-y-2">
-                            <div className="flex items-center space-x-3">
-                              {certificate.student.photoUrl && (
-                                <img src={certificate.student.photoUrl} alt="student" className="w-16 h-16 rounded-md object-cover" />
-                              )}
-                              <div>
-                                <div className="text-sm font-semibold text-gray-900">{certificate.student.firstName} {certificate.student.lastName}</div>
-                                <div className="text-xs text-gray-500">ID: {certificate.student.studentId}</div>
+                      ? 'border-green-500'
+                      : 'border-red-500'
+                  }`}
+                >
+                  <div className="flex items-start space-x-4">
+                    {certificate.status === CertificateStatus.ACTIVE ? (
+                      <CheckCircle className="w-12 h-12 text-green-500 flex-shrink-0" />
+                    ) : (
+                      <XCircle className="w-12 h-12 text-red-500 flex-shrink-0" />
+                    )}
+                    <div className="flex-1">
+                      <h3
+                        className={`text-xl font-bold ${
+                          certificate.status === CertificateStatus.ACTIVE
+                            ? 'text-green-600'
+                            : 'text-red-600'
+                        }`}
+                      >
+                        {certificate.status === CertificateStatus.ACTIVE
+                          ? 'Valid Certificate'
+                          : 'Revoked Certificate'}
+                      </h3>
+                      <div className="mt-4 space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          {(() => {
+                            const raw = (certificate as any).finalMark;
+                            const mark =
+                              typeof raw === 'number'
+                                ? raw
+                                : raw !== undefined && raw !== null
+                                ? Number(raw)
+                                : NaN;
+                            return Number.isFinite(mark) ? (
+                              <div className="p-3 bg-blue-50 border-l-4 border-blue-500 rounded">
+                                <p className="text-xs text-gray-600 font-medium">Final Mark</p>
+                                <p className="text-2xl font-bold text-blue-600">
+                                  {mark.toFixed(2)}%
+                                </p>
                               </div>
+                            ) : null;
+                          })()}
+                          {certificate.degreeClassification && (
+                            <div className="p-3 bg-green-50 border-l-4 border-green-500 rounded">
+                              <p className="text-xs text-gray-600 font-medium">Classification</p>
+                              <p className="text-lg font-bold text-green-600">
+                                {certificate.degreeClassification}
+                              </p>
                             </div>
-                            <div className="text-sm text-gray-700">
-                              Program:{' '}
-                              {programTitle ||
-                                certificate.student.programId ||
-                                'N/A'}
-                            </div>
-                            <div className="text-sm text-gray-700">Enrollment: {certificate.student.enrollmentDate ? new Date(certificate.student.enrollmentDate).toLocaleDateString() : 'N/A'}</div>
-                          </div>
-                        ) : (
-                          <div className="text-sm text-gray-600">No student details available</div>
-                        )}
-                      </div>
+                          )}
+                        </div>
 
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-600 mb-2">University Information & Seal</h4>
-                        {certificate.university ? (
-                          <div className="space-y-3">
-                            <div className="flex items-center space-x-3">
-                              {certificate.university.logoUrl && (
-                                <img src={certificate.university.logoUrl} alt="university-logo" className="w-16 h-16 rounded-md object-contain" />
-                              )}
-                              <div>
-                                <div className="text-sm text-gray-700 font-semibold">{certificate.university.name}</div>
-                                <div className="text-xs text-gray-500">{certificate.university.address}</div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-600 mb-2">
+                              Student Information
+                            </h4>
+                            {certificate.student ? (
+                              <div className="space-y-2">
+                                <div className="flex items-center space-x-3">
+                                  {certificate.student.photoUrl && (
+                                    <img
+                                      src={certificate.student.photoUrl}
+                                      alt="student"
+                                      className="w-16 h-16 rounded-md object-cover"
+                                    />
+                                  )}
+                                  <div>
+                                    <div className="text-sm font-semibold text-gray-900">
+                                      {certificate.student.firstName}{' '}
+                                      {certificate.student.lastName}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      ID: {certificate.student.studentId}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-sm text-gray-700">
+                                  Program:{' '}
+                                  {programTitle || certificate.student.programId || 'N/A'}
+                                </div>
+                                <div className="text-sm text-gray-700">
+                                  Enrollment:{' '}
+                                  {certificate.student.enrollmentDate
+                                    ? new Date(
+                                        certificate.student.enrollmentDate
+                                      ).toLocaleDateString()
+                                    : 'N/A'}
+                                </div>
                               </div>
-                            </div>
-                            <div className="text-sm text-gray-700">UKPRN: {certificate.university.ukprn || 'N/A'}</div>
-                            <div className="text-sm text-gray-700">Registrar: {certificate.university.registrarName || 'N/A'}</div>
-                            <div className="text-sm text-gray-700">Contact: {certificate.university.contactEmail}</div>
-                            
-                            {/* Official Seal Display */}
-                            {certificate.university.officialSealUrl && (
-                              <div className="mt-4 pt-4 border-t border-gray-200">
-                                <p className="text-xs font-semibold text-gray-600 mb-2">Official Institutional Seal</p>
-                                <img src={certificate.university.officialSealUrl} alt="official-seal" className="w-20 h-20 rounded object-contain border-2 border-gray-300" />
+                            ) : (
+                              <div className="text-sm text-gray-600">
+                                No student details available
                               </div>
                             )}
                           </div>
-                        ) : (
-                          <div className="text-sm text-gray-600">No university details available</div>
+
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-600 mb-2">
+                              University Information & Seal
+                            </h4>
+                            {certificate.university ? (
+                              <div className="space-y-3">
+                                <div className="flex items-center space-x-3">
+                                  {certificate.university.logoUrl && (
+                                    <img
+                                      src={certificate.university.logoUrl}
+                                      alt="university-logo"
+                                      className="w-16 h-16 rounded-md object-contain"
+                                    />
+                                  )}
+                                  <div>
+                                    <div className="text-sm text-gray-700 font-semibold">
+                                      {certificate.university.name}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {certificate.university.address}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="text-sm text-gray-700">
+                                  UKPRN: {certificate.university.ukprn || 'N/A'}
+                                </div>
+                                <div className="text-sm text-gray-700">
+                                  Registrar: {certificate.university.registrarName || 'N/A'}
+                                </div>
+                                <div className="text-sm text-gray-700">
+                                  Contact: {certificate.university.contactEmail}
+                                </div>
+
+                                {/* Official Seal Display */}
+                                {certificate.university.officialSealUrl && (
+                                  <div className="mt-4 pt-4 border-t border-gray-200">
+                                    <p className="text-xs font-semibold text-gray-600 mb-2">
+                                      Official Institutional Seal
+                                    </p>
+                                    <img
+                                      src={certificate.university.officialSealUrl}
+                                      alt="official-seal"
+                                      className="w-20 h-20 rounded object-contain border-2 border-gray-300"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="text-sm text-gray-600">
+                                No university details available
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="font-medium text-gray-700">Graduation Date:</span>
+                          <p className="text-gray-900">
+                            {certificate.graduationDate
+                              ? new Date(certificate.graduationDate).toLocaleDateString()
+                              : ''}
+                          </p>
+                        </div>
+
+                        {/* Module Grades */}
+                        {certificate.grades && certificate.grades.length > 0 && (
+                          <div className="mt-4">
+                            <h4 className="text-sm font-semibold text-gray-600 mb-2">
+                              Module Grades
+                            </h4>
+                            <div className="overflow-x-auto">
+                              <table className="min-w-full text-sm">
+                                <thead>
+                                  <tr className="border-b">
+                                    <th className="text-left py-2 px-3 font-medium text-gray-600">
+                                      Module Code
+                                    </th>
+                                    <th className="text-left py-2 px-3 font-medium text-gray-600">
+                                      Module Title
+                                    </th>
+                                    <th className="text-right py-2 px-3 font-medium text-gray-600">
+                                      Credits
+                                    </th>
+                                    <th className="text-right py-2 px-3 font-medium text-gray-600">
+                                      Mark
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {certificate.grades.map((grade: any) => (
+                                    <tr
+                                      key={grade.id}
+                                      className="border-b hover:bg-gray-50"
+                                    >
+                                      <td className="py-2 px-3">
+                                        {grade.module?.code || grade.moduleId || 'N/A'}
+                                      </td>
+                                      <td className="py-2 px-3">
+                                        {grade.module?.name || 'N/A'}
+                                      </td>
+                                      <td className="py-2 px-3 text-right">
+                                        {grade.module?.credits ?? 0}
+                                      </td>
+                                      <td className="py-2 px-3 text-right font-medium">
+                                        {Number.isFinite(Number(grade.mark))
+                                          ? `${Number(grade.mark).toFixed(2)}%`
+                                          : '—'}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
                         )}
                       </div>
                     </div>
+                  </div>
+                </Card>
 
-                    <div>
-                      <span className="font-medium text-gray-700">Graduation Date:</span>
-                      <p className="text-gray-900">
-                        {certificate.graduationDate ? new Date(certificate.graduationDate).toLocaleDateString() : ''}
+                {showVerificationForm &&
+                  certificate?.status === CertificateStatus.ACTIVE && (
+                    <Card title="Log Your Verification">
+                      <p className="text-gray-600 mb-4">
+                        Please provide your information to log this verification request.
                       </p>
-                    </div>
-
-                    {/* Module Grades */}
-                    {certificate.grades && certificate.grades.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="text-sm font-semibold text-gray-600 mb-2">Module Grades</h4>
-                        <div className="overflow-x-auto">
-                          <table className="min-w-full text-sm">
-                            <thead>
-                              <tr className="border-b">
-                                <th className="text-left py-2 px-3 font-medium text-gray-600">Module Code</th>
-                                <th className="text-left py-2 px-3 font-medium text-gray-600">Module Title</th>
-                                <th className="text-right py-2 px-3 font-medium text-gray-600">Credits</th>
-                                <th className="text-right py-2 px-3 font-medium text-gray-600">Mark</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {certificate.grades.map((grade: any) => (
-                                <tr key={grade.id} className="border-b hover:bg-gray-50">
-                                  <td className="py-2 px-3">
-                                    {grade.module?.code || grade.moduleId || 'N/A'}
-                                  </td>
-                                  <td className="py-2 px-3">
-                                    {grade.module?.name || 'N/A'}
-                                  </td>
-                                  <td className="py-2 px-3 text-right">
-                                    {grade.module?.credits ?? 0}
-                                  </td>
-                                  <td className="py-2 px-3 text-right font-medium">
-                                    {Number.isFinite(Number(grade.mark))
-                                      ? `${Number(grade.mark).toFixed(2)}%`
-                                      : '—'}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                      <form onSubmit={handleSubmitVerification}>
+                        <Input
+                          label="Company Name"
+                          value={companyName}
+                          onChange={(e) => setCompanyName(e.target.value)}
+                          required
+                        />
+                        <Input
+                          label="Email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                        />
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Reason for Verification <span className="text-red-500">*</span>
+                          </label>
+                          <textarea
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                            required
+                            rows={3}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
                         </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            {showVerificationForm && certificate?.status === CertificateStatus.ACTIVE && (
-              <Card className="mt-6" title="Log Your Verification">
-                <p className="text-gray-600 mb-4">
-                  Please provide your information to log this verification request.
-                </p>
-                <form onSubmit={handleSubmitVerification}>
-                  <Input
-                    label="Company Name"
-                    value={companyName}
-                    onChange={(e) => setCompanyName(e.target.value)}
-                    required
-                  />
-                  <Input
-                    label="Email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Reason for Verification <span className="text-red-500">*</span>
-                    </label>
-                    <textarea
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                      required
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <Button type="submit" className="w-full">
-                    Submit Verification
-                  </Button>
-                </form>
-              </Card>
+                        <Button type="submit" className="w-full">
+                          Submit Verification
+                        </Button>
+                      </form>
+                    </Card>
+                  )}
+              </>
             )}
-          </>
-        )}
+          </div>
+        </div>
 
         <div className="mt-8 text-center">
           <a

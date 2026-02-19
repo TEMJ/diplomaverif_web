@@ -8,7 +8,11 @@ export const Navbar: React.FC = () => {
   const { user, university, student, logout } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [profileImgError, setProfileImgError] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+  const API_ORIGIN = API_URL.replace(/\/api\/?$/, '');
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -19,6 +23,28 @@ export const Navbar: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const rawProfileImageUrl =
+    user?.role === Role.STUDENT
+      ? student?.photoUrl
+      : user?.role === Role.UNIVERSITY
+        ? university?.logoUrl
+        : undefined;
+
+  const resolveAssetUrl = (url: string | undefined) => {
+    if (!url) return undefined;
+    if (/^https?:\/\//i.test(url)) return url;
+    // Handle relative paths returned by API (e.g. "/uploads/logo.png" or "uploads/logo.png")
+    const normalized = url.startsWith('/') ? url : `/${url}`;
+    return `${API_ORIGIN}${normalized}`;
+  };
+
+  const profileImageUrl = resolveAssetUrl(rawProfileImageUrl);
+
+  useEffect(() => {
+    // If the image URL changes, try loading it again.
+    setProfileImgError(false);
+  }, [profileImageUrl]);
 
   const handleLogout = () => {
     setMenuOpen(false);
@@ -48,7 +74,7 @@ export const Navbar: React.FC = () => {
 
   return (
     <nav className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <h1 className="text-xl font-bold text-blue-600">DiplomaVerif</h1>
@@ -61,19 +87,29 @@ export const Navbar: React.FC = () => {
                   {user.role}
                 </span>
                 
-                <span className="text-sm text-gray-700 truncate hidden sm:inline" title={displayLabel()}>
-                  {displayLabel()}
-                </span>
+                
               </div>
 
               <div className="relative" ref={menuRef} >
                 <button
                   type="button"
                   onClick={() => setMenuOpen((o) => !o)}
-                  className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className="flex items-center justify-center w-auto p-2 h-10 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500 focus:ring-offset-2"
                   aria-label="Profile menu"
                 >
-                  <User className="w-5 h-5" />
+                  {user.role !== Role.ADMIN && profileImageUrl && !profileImgError ? (
+                    <img
+                      src={profileImageUrl}
+                      alt={user.role === Role.UNIVERSITY ? 'University logo' : 'Student profile'}
+                      className="w-7 h-7 rounded-full object-cover"
+                      onError={() => setProfileImgError(true)}
+                    />
+                  ) : (
+                    <User className="w-5 h-5" />
+                  )}
+                  <span className="text-sm text-gray-700 truncate hidden sm:inline" title={displayLabel()}>
+                    {displayLabel()}
+                  </span>
                   <ChevronDown className={`w-4 h-4 ml-0.5 transition-transform ${menuOpen ? 'rotate-180' : ''}`} />
                 </button>
 

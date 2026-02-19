@@ -62,10 +62,22 @@ axiosInstance.interceptors.response.use(
     });
 
     switch (error.response.status) {
-      case 401:
+      case 401: {
         localStorage.removeItem('token');
-        window.location.href = '/login';
+
+        const currentPath = window.location?.pathname || '';
+        const urlPath = error.config?.url || '';
+        const isPublicVerifyPage = currentPath.startsWith('/verify');
+        const isPublicVerifyEndpoint =
+          urlPath.startsWith('/certificates/verify') ||
+          urlPath.startsWith('/certificates/search');
+
+        // Public verification flows stay anonymous: no redirect, no extra toast
+        if (!isPublicVerifyPage && !isPublicVerifyEndpoint) {
+          window.location.href = '/login';
+        }
         break;
+      }
       case 403:
         toast.error('You do not have the necessary permissions');
         break;
