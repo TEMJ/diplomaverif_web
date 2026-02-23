@@ -8,7 +8,7 @@ import { Select } from '../components/common/Select';
 import axios from '../lib/axios';
 import toast from 'react-hot-toast';
 import { Certificate, Student, CertificateStatus, Program } from '../types';
-import { Plus, Eye, Ban, FileText } from 'lucide-react';
+import { Plus, Eye, Ban, FileText, ScrollText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Role } from '../types';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -164,6 +164,27 @@ export const Certificates: React.FC = () => {
     }
   };
 
+  const handleDownloadTranscript = async (certificateId: string) => {
+    try {
+      const response = await axios.get(`/certificates/${certificateId}/transcript`, {
+        responseType: 'blob',
+      });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `transcript-${certificateId}-${new Date().getTime()}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success('Transcript downloaded successfully');
+    } catch (error) {
+      console.error('Error downloading transcript:', error);
+      toast.error('Failed to download transcript');
+    }
+  };
+
   // Helper to robustly extract student name fields from API objects that may use different keys
   const formatStudentDisplay = (s: any) => {
     if (!s) return '—';
@@ -241,13 +262,24 @@ export const Certificates: React.FC = () => {
           <button
             onClick={() => handleViewDetails(row)}
             className="text-blue-600 hover:text-blue-800"
+            title="View details"
           >
             <Eye className="w-5 h-5" />
           </button>
+          {row.status === CertificateStatus.ACTIVE && (
+            <button
+              onClick={() => handleDownloadTranscript(row.id)}
+              className="text-emerald-600 hover:text-emerald-800"
+              title="Download transcript"
+            >
+              <ScrollText className="w-5 h-5" />
+            </button>
+          )}
           {user?.role !== Role.STUDENT && row.status === CertificateStatus.ACTIVE && (
             <button
               onClick={() => handleRevoke(row.id)}
               className="text-red-600 hover:text-red-800"
+              title="Revoke certificate"
             >
               <Ban className="w-5 h-5" />
             </button>
@@ -386,15 +418,23 @@ export const Certificates: React.FC = () => {
               </div>
             </div>
 
-            {/* PDF Download Button */}
+            {/* PDF and Transcript Download Buttons */}
             {viewingCertificate.status === CertificateStatus.ACTIVE && (
-              <div className="border-t pt-6">
+              <div className="border-t pt-6 flex flex-col sm:flex-row gap-3">
                 <Button
                   onClick={() => handleDownloadPDF(viewingCertificate.id)}
-                  className="w-full flex items-center justify-center"
+                  className="flex-1 flex items-center justify-center"
                 >
                   <FileText className="w-5 h-5 mr-2" />
-                  Download Certificate as PDF
+                  Download Certificate (PDF)
+                </Button>
+                <Button
+                  onClick={() => handleDownloadTranscript(viewingCertificate.id)}
+                  variant="secondary"
+                  className="flex-1 flex items-center justify-center"
+                >
+                  <ScrollText className="w-5 h-5 mr-2" />
+                  Download Transcript
                 </Button>
               </div>
             )}
