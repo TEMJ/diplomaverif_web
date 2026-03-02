@@ -71,9 +71,10 @@ axiosInstance.interceptors.response.use(
         const isPublicVerifyEndpoint =
           urlPath.startsWith('/certificates/verify') ||
           urlPath.startsWith('/certificates/search');
+        const isLoginRequest = urlPath.includes('/auth/login');
 
-        // Public verification flows stay anonymous: no redirect, no extra toast
-        if (!isPublicVerifyPage && !isPublicVerifyEndpoint) {
+        // Don't redirect: public verify, or login form itself (let Login show error toast)
+        if (!isPublicVerifyPage && !isPublicVerifyEndpoint && !isLoginRequest) {
           window.location.href = '/login';
         }
         break;

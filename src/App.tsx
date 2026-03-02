@@ -6,6 +6,8 @@ import { Layout } from './components/layout/Layout';
 import { Toaster } from 'react-hot-toast';
 
 import { Login } from './pages/Login';
+import { RequestPasswordReset } from './pages/RequestPasswordReset';
+import { ResetPassword } from './pages/ResetPassword';
 import { Landing } from './pages/Landing';
 import { Dashboard } from './pages/Dashboard';
 import { Universities } from './pages/Universities';
@@ -28,6 +30,8 @@ function App() {
         <Toaster position="top-right" />
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<RequestPasswordReset />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify" element={<VerifyCertificate />} />
           {/* Support direct links from QR codes like /verify/:qrHash */}
           <Route path="/verify/:qrHash" element={<VerifyCertificate />} />

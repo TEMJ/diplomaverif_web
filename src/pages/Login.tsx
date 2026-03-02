@@ -134,7 +134,17 @@ export const Login: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Your password"
                 required
-              /> 
+              />
+
+              <div className="flex justify-end -mt-2">
+                <button
+                  type="button"
+                  onClick={() => navigate('/forgot-password')}
+                  className="text-xs font-medium text-blue-700 hover:text-blue-800"
+                >
+                  Forgot password?
+                </button>
+              </div>
 
               <Button type="submit" disabled={loading} className="w-full">
                 {loading ? 'Connection...' : 'Access the dashboard'}
