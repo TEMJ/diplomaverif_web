@@ -22,6 +22,7 @@ import { Grades } from './pages/Grades';
 import { Programs } from './pages/Programs';
 import { Modules } from './pages/Modules';
 import { Settings } from './pages/Settings';
+import { ServerError } from './pages/ServerError';
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<RequestPasswordReset />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/server-error" element={<ServerError />} />
           <Route path="/verify" element={<VerifyCertificate />} />
           {/* Support direct links from QR codes like /verify/:qrHash */}
           <Route path="/verify/:qrHash" element={<VerifyCertificate />} />

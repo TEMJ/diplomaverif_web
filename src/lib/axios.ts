@@ -48,9 +48,9 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     if (!error.response) {
-      // Network error (no response from server)
+      // Network error (no response from server) -> show dedicated server error page
       console.error('Network Error:', error.message);
-      toast.error('Server connection error. Please check your connection.');
+      window.location.href = '/server-error';
       return Promise.reject(error);
     }
 
@@ -86,7 +86,8 @@ axiosInstance.interceptors.response.use(
         toast.error('Resource not found');
         break;
       case 500:
-        toast.error('Server error. Please try again later.');
+        // Redirect to dedicated server error page
+        window.location.href = '/server-error';
         break;
       default:
         const message = error.response?.data?.message 
