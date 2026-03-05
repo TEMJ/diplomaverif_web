@@ -11,7 +11,7 @@ export const Navbar: React.FC = () => {
   const [profileImgError, setProfileImgError] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+  const API_URL = import.meta.env.VITE_API_URL;
   const API_ORIGIN = API_URL.replace(/\/api\/?$/, '');
 
   useEffect(() => {
