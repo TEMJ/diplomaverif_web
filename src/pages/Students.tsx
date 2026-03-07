@@ -446,7 +446,7 @@ export const Students: React.FC = () => {
                 })}
                 required
                 placeholder="Ex: 5142369870"
-                disabled={!!editingStudent} // Optional: lock it during edits to prevent ID changes
+                disabled={!!editingStudent}
               />
               <Input
                 label="First Name"
