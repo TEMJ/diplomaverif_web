@@ -240,7 +240,7 @@ export const VerifyCertificate: React.FC = () => {
           <Card>
             {/* Search Mode Tabs */}
             <div className="flex gap-2 mb-6 border-b border-gray-200">
-              <button
+              {/* <button
                 onClick={() => setSearchMode('qr')}
                 className={`pb-3 px-4 font-medium transition-colors ${
                   searchMode === 'qr'
@@ -252,7 +252,7 @@ export const VerifyCertificate: React.FC = () => {
                   <Camera className="w-4 h-4" />
                   QR Code / Hash
                 </div>
-              </button>
+              </button> */}
               <button
                 onClick={() => setSearchMode('id')}
                 className={`pb-3 px-4 font-medium transition-colors ${
@@ -295,37 +295,12 @@ export const VerifyCertificate: React.FC = () => {
 
             {/* Search Form */}
             <form onSubmit={handleVerify}>
-              {searchMode === 'qr' ? (
-                <div className="space-y-4">
-                  <Input
-                    label="QR Hash Code or URL"
-                    value={qrHash}
-                    onChange={(e) => setQrHash(e.target.value)}
-                    placeholder="Paste QR hash or scan with camera"
-                    required={!showQRScanner}
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      onClick={startQRScanner}
-                      disabled={showQRScanner}
-                      className="flex-1 flex items-center justify-center gap-2"
-                    >
-                      <Camera className="w-4 h-4" />
-                      Scan QR Code
-                    </Button>
-                    <Button type="submit" disabled={loading} className="flex-1">
-                      {loading ? 'Verifying...' : 'Verify Certificate'}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
                 <div className="space-y-4">
                   <Input
                     label="Certificate ID or Student ID"
                     value={studentId}
                     onChange={(e) => setStudentId(e.target.value)}
-                    placeholder="Enter Certificate ID (e.g., CERT-2024-001) or Student ID (e.g., 2024001)"
+                    placeholder="Enter Certificate ID (e.g., CERT-2024-001) or Student ID"
                     required
                   />
                   <Button
@@ -337,7 +312,6 @@ export const VerifyCertificate: React.FC = () => {
                     {loading ? 'Searching...' : 'Search Certificate'}
                   </Button>
                 </div>
-              )}
             </form>
           </Card>
 

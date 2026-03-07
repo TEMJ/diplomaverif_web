@@ -13,6 +13,7 @@ import { useAuth } from '../context/AuthContext';
 import { Role } from '../types';
 
 interface StudentFormData {
+  studentId: string; // Optional for form data, as it's auto-generated
   universityId: string;
   programId: string;
   firstName: string;
@@ -36,6 +37,7 @@ export const Students: React.FC = () => {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [generatedStudentId, setGeneratedStudentId] = useState<string | null>(null);
   const [formData, setFormData] = useState<StudentFormData>({
+    studentId: '',
     universityId: '',
     programId: '',
     firstName: '',
@@ -154,6 +156,7 @@ export const Students: React.FC = () => {
       setEditingStudent(student);
       setGeneratedStudentId(null);
       setFormData({
+        studentId: student.studentId || '',
         universityId: student.universityId,
         programId: student.programId || '',
         firstName: student.firstName,
@@ -168,6 +171,7 @@ export const Students: React.FC = () => {
       setEditingStudent(null);
       setGeneratedStudentId(null);
       setFormData({
+        studentId: '',
         universityId: user?.role === Role.UNIVERSITY ? user.universityId || '' : '',
         programId: '',
         firstName: '',
@@ -231,6 +235,7 @@ export const Students: React.FC = () => {
     try {
       // 1. Envoyer les données principales en JSON
       const studentPayload = {
+        studentId: formData.studentId,
         universityId,
         programId: formData.programId,
         firstName: formData.firstName,
@@ -432,6 +437,17 @@ export const Students: React.FC = () => {
             {/* Personal Identity */}
             <div className="border-t pt-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Identity</h3>
+              <Input
+                label="Student ULN (10 digits)"
+                value={formData.studentId}
+                onChange={(e) => setFormData({ 
+                  ...formData, 
+                  studentId: e.target.value.replace(/\D/g, '').slice(0, 10) 
+                })}
+                required
+                placeholder="Ex: 5142369870"
+                disabled={!!editingStudent} // Optional: lock it during edits to prevent ID changes
+              />
               <Input
                 label="First Name"
                 value={formData.firstName}

@@ -33,22 +33,26 @@ export const Dashboard: React.FC = () => {
       if (user?.role === Role.ADMIN) {
         requests.push(
           axios.get('/universities').then(res => ({ key: 'universities', data: res.data })),
-          axios.get('/students').then(res => ({ key: 'students', data: res.data }))
+          // axios.get('/students').then(res => ({ key: 'students', data: res.data }))
         );
       } else if (user?.role === Role.UNIVERSITY && user.universityId) {
         params.universityId = user.universityId;
         requests.push(
-          axios.get('/students', { params }).then(res => ({ key: 'students', data: res.data }))
+          axios.get('/students', { params }).then(res => ({ key: 'students', data: res.data })),
+          axios.get('/certificates', { params }).then(res => ({ key: 'certificates', data: res.data })),
+          axios.get('/verifications', { params }).then(res => ({ key: 'verifications', data: res.data })),
+          axios.get('/programs', { params }).then(res => ({ key: 'programs', data: res.data })),
+          axios.get('/modules', { params }).then(res => ({ key: 'modules', data: res.data })),
         );
       }
 
       // Always fetch certificates and verifications
-      requests.push(
-        axios.get('/certificates', { params }).then(res => ({ key: 'certificates', data: res.data })),
-        axios.get('/verifications', { params }).then(res => ({ key: 'verifications', data: res.data })),
-        axios.get('/programs', { params }).then(res => ({ key: 'programs', data: res.data })),
-        axios.get('/modules', { params }).then(res => ({ key: 'modules', data: res.data })),
-      );
+      // requests.push(
+      //   axios.get('/certificates', { params }).then(res => ({ key: 'certificates', data: res.data })),
+      //   axios.get('/verifications', { params }).then(res => ({ key: 'verifications', data: res.data })),
+      //   axios.get('/programs', { params }).then(res => ({ key: 'programs', data: res.data })),
+      //   axios.get('/modules', { params }).then(res => ({ key: 'modules', data: res.data })),
+      // );
 
       // Wait for all requests and process results
       const results = await Promise.all(requests);
@@ -137,7 +141,7 @@ export const Dashboard: React.FC = () => {
     <div>
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 ">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-1 mb-10 ">
         {statCards
           .filter((card) => card.show)
           .map((card) => (
@@ -156,7 +160,7 @@ export const Dashboard: React.FC = () => {
             </Card>
           ))}
       </div>
-
+      <hr className="my-2" />
       <Card title="Welcome to DiplomaVerif">
         {(user?.role === Role.UNIVERSITY && university) || (user?.role === Role.STUDENT && student) ? (
           <div className="space-y-2">
