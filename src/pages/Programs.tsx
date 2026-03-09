@@ -148,10 +148,10 @@ export const Programs: React.FC = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Programs</h1>
+        <h1 className="text-3xl font-bold text-gray-900">Programmes</h1>
         <Button onClick={() => handleOpenModal()}>
           <Plus className="w-5 h-5 mr-2 inline" />
-          Add Program
+          Add Programme
         </Button>
       </div>
 

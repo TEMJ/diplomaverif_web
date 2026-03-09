@@ -38,7 +38,7 @@ export const Sidebar: React.FC = () => {
     },
     {
       path: '/programs',
-      label: 'Programs',
+      label: 'Programmes',
       icon: BookOpen,
       roles: [Role.UNIVERSITY],
     },
