@@ -107,7 +107,7 @@ export const Navbar: React.FC = () => {
                   ) : (
                     <User className="w-5 h-5" />
                   )}
-                  <span className="text-sm text-gray-700 truncate hidden sm:inline" title={displayLabel()}>
+                  <span className="text-sm ml-2 text-gray-700 truncate hidden sm:inline" title={displayLabel()}>
                     {displayLabel()}
                   </span>
                   <ChevronDown className={`w-4 h-4 ml-0.5 transition-transform ${menuOpen ? 'rotate-180' : ''}`} />

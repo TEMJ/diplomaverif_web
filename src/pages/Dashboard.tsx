@@ -106,13 +106,13 @@ export const Dashboard: React.FC = () => {
       color: 'bg-yellow-500',
       show: user?.role === Role.UNIVERSITY || user?.role === Role.STUDENT,
     },
-    {
-      title: 'Verifications',
-      value: stats.verifications,
-      icon: CheckCircle,
-      color: 'bg-purple-500',
-      show: user?.role === Role.UNIVERSITY,
-    },
+    // {
+    //   title: 'Verifications',
+    //   value: stats.verifications,
+    //   icon: CheckCircle,
+    //   color: 'bg-purple-500',
+    //   show: user?.role === Role.UNIVERSITY,
+    // },
     {
       title: 'Programs',
       value: stats.programs,
@@ -171,7 +171,7 @@ export const Dashboard: React.FC = () => {
                   <p className="text-sm text-gray-600">{university.address}</p>
                 )}
                 <p className="text-gray-600 mt-2">
-                  As a university, you can manage your students, issue certificates, and view verifications.
+                  As a university, you can manage your students, issue certificates.
                 </p>
               </>
             )}

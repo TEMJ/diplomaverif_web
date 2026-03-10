@@ -60,12 +60,12 @@ export const Sidebar: React.FC = () => {
       icon: Award,
       roles: [Role.UNIVERSITY, Role.STUDENT],
     },
-    {
-      path: '/verifications',
-      label: 'Verifications',
-      icon: CheckCircle,
-      roles: [Role.UNIVERSITY],
-    },
+    // {
+    //   path: '/verifications',
+    //   label: 'Verifications',
+    //   icon: CheckCircle,
+    //   roles: [Role.UNIVERSITY],
+    // },
     {
       path: '/settings',
       label: 'Settings',
