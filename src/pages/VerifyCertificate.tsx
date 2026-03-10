@@ -408,7 +408,7 @@ export const VerifyCertificate: React.FC = () => {
                                       {certificate.student.lastName}
                                     </div>
                                     <div className="text-xs text-gray-500">
-                                      ID: {certificate.student.studentId}
+                                      Student ID (ULN): {certificate.student.studentId}
                                     </div>
                                   </div>
                                 </div>
