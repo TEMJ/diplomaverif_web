@@ -155,7 +155,12 @@ export const VerifyCertificate: React.FC = () => {
                 <div className="bg-white border border-slate-200 rounded-xl p-8 shadow-sm">
                   <div className="flex items-start gap-4 mb-8">
                     <div className="bg-slate-50 p-3 rounded-lg">
-                      <School className="w-6 h-6 text-slate-400" />
+                      {certificate.university?.logoUrl ? (
+                        <img src={certificate.university.logoUrl} alt="Logo" className="w-20 h-20 object-contain" />
+                      ) : (
+                        <School className="w-6 h-6 text-slate-400" />
+                      )}
+                      
                     </div>
                     <div>
                       <Label>Awarding Body</Label>
